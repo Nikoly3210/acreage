@@ -66,7 +66,8 @@ pub fn node_size(tree: &Tree, id: NodeId, mode: SizeMode) -> u64 {
 pub fn filtered_sizes(
     tree: &Tree,
     root: NodeId,
-    f: &Filter,
+    f: Option<&Filter>,
+    hide_dot: bool,
     tags: &HashMap<NodeId, Tag>,
     mode: SizeMode,
     now: i64,
@@ -78,20 +79,38 @@ pub fn filtered_sizes(
     let mut stack = vec![(root, root_inh, false)];
     while let Some((id, inh, done)) = stack.pop() {
         if done {
-            out[id as usize] = tree.children(id).map(|c| out[c as usize]).sum();
+            let shown: u64 = tree.children(id).map(|c| out[c as usize]).sum();
+            // Without a filter, a folder keeps its own size (its directory blocks), like the
+            // unfiltered view; a filter selects files only.
+            let own = match f {
+                None if id != root => node_size(tree, id, mode)
+                    .saturating_sub(tree.children(id).map(|c| node_size(tree, c, mode)).sum()),
+                _ => 0,
+            };
+            out[id as usize] = shown + own;
             continue;
         }
         stack.push((id, inh, true));
         for c in tree.children(id) {
             let n = tree.get(c);
+            if hide_dot && tree.name(c).first() == Some(&b'.') {
+                continue;
+            }
             match n.kind {
                 Kind::Dir => {
-                    let child_inh = f.enter_dir(&inh, tree.name(c), tags.get(&c).copied());
+                    let child_inh = match f {
+                        Some(f) => f.enter_dir(&inh, tree.name(c), tags.get(&c).copied()),
+                        None => inh,
+                    };
                     stack.push((c, child_inh, false));
                 }
                 Kind::Denied | Kind::MountPoint => {}
                 Kind::File | Kind::Symlink | Kind::Other => {
                     let size = node_size(tree, c, mode);
+                    let Some(f) = f else {
+                        out[c as usize] = size;
+                        continue;
+                    };
                     if f.file_matches(
                         &inh,
                         tree.name(c),
@@ -208,6 +227,8 @@ pub struct View {
     pub selected: Option<NodeId>,
     pub filter_src: String,
     pub filter: Option<Filter>,
+    /// Leave out names starting with a dot (setting).
+    pub hide_dot: bool,
     filter_gen: u64,
     pub laid: Vec<Laid>,
     sizes: Option<Vec<u64>>,
@@ -223,11 +244,19 @@ impl View {
             selected: None,
             filter_src: String::new(),
             filter: None,
+            hide_dot: false,
             filter_gen: 0,
             laid: vec![],
             sizes: None,
             key: None,
             last_layout: Instant::now() - Duration::from_secs(1),
+        }
+    }
+
+    pub fn set_hide_dot(&mut self, hide: bool) {
+        if self.hide_dot != hide {
+            self.hide_dot = hide;
+            self.filter_gen += 1;
         }
     }
 
@@ -335,10 +364,17 @@ impl View {
                 return false;
             }
         }
-        self.sizes = self
-            .filter
-            .as_ref()
-            .map(|f| filtered_sizes(tree, self.zoom, f, tags, mode, now));
+        self.sizes = (self.filter.is_some() || self.hide_dot).then(|| {
+            filtered_sizes(
+                tree,
+                self.zoom,
+                self.filter.as_ref(),
+                self.hide_dot,
+                tags,
+                mode,
+                now,
+            )
+        });
         let sizes = &self.sizes;
         let size_fn = |id: NodeId| match sizes {
             Some(s) => s[id as usize],
@@ -478,7 +514,7 @@ mod tests {
     fn filter_hides_and_resizes() {
         let t = tree();
         let f = crate::filter::parse("*.jpg").unwrap().unwrap();
-        let s = filtered_sizes(&t, 0, &f, &HashMap::new(), SizeMode::Disk, 0);
+        let s = filtered_sizes(&t, 0, Some(&f), false, &HashMap::new(), SizeMode::Disk, 0);
         assert_eq!(s[2], 0);
         assert_eq!(s[1], 3180);
         assert_eq!(s[0], 3180);

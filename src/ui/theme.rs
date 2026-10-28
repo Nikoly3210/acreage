@@ -229,6 +229,7 @@ pub mod layout {
     pub const MIN_WINDOW: [f32; 2] = [320.0, 240.0];
     pub const COMPACT_BELOW_W: f32 = 700.0;
     pub const WIDE_ABOVE_W: f32 = 1100.0;
+    pub const SIDE_PANEL_W: f32 = 420.0;
     pub mod tm {
         pub const DIR_HEADER_H: f32 = 16.0;
         pub const GAP: f32 = 1.0;
@@ -240,5 +241,7 @@ pub mod layout {
         pub const SELECT_W: f32 = 2.0;
         pub const HOVER_W: f32 = 1.5;
         pub const MIN_CHILD_AREA: f32 = 144.0;
+        pub const MIN_CHILD_AREA_COARSE: f32 = 900.0;
+        pub const MIN_CHILD_AREA_FINE: f32 = 36.0;
     }
 }

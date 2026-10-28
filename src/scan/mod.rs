@@ -3,8 +3,9 @@
 
 pub mod mounts;
 
-use std::ffi::OsStr;
+use std::ffi::{CStr, OsStr};
 use std::io;
+use std::os::fd::OwnedFd;
 use std::os::unix::ffi::OsStrExt;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -59,7 +60,7 @@ struct Ctl {
     paused: AtomicBool,
     cancel: AtomicBool,
     finished: AtomicBool,
-    next_id: AtomicU32,
+    ids: Arc<AtomicU32>,
     pending: AtomicUsize,
 }
 
@@ -110,14 +111,15 @@ impl Scanner {
         mounts: Arc<MountTable>,
         wake: Arc<dyn Fn() + Send + Sync>,
     ) -> Scanner {
-        Self::start_at(root, 0, 1, opts, mounts, wake)
+        Self::start_at(root, 0, Arc::new(AtomicU32::new(1)), opts, mounts, wake)
     }
 
-    /// Scan `root` as existing node `root_id`, handing out new ids from `first_id`.
+    /// Scan `root` as existing node `root_id`. `ids` is shared with every other scan of
+    /// the same tree, so a sub-scan can run next to the main one without id clashes.
     pub fn start_at(
         root: PathBuf,
         root_id: NodeId,
-        first_id: NodeId,
+        ids: Arc<AtomicU32>,
         opts: ScanOpts,
         mounts: Arc<MountTable>,
         wake: Arc<dyn Fn() + Send + Sync>,
@@ -126,7 +128,7 @@ impl Scanner {
             paused: AtomicBool::new(false),
             cancel: AtomicBool::new(false),
             finished: AtomicBool::new(false),
-            next_id: AtomicU32::new(first_id),
+            ids,
             pending: AtomicUsize::new(1),
         });
         let (ev_tx, events) = unbounded();
@@ -187,9 +189,9 @@ impl Scanner {
         }
     }
 
-    /// The next free node id (for starting a sub-scan after this one).
-    pub fn next_id(&self) -> NodeId {
-        self.ctl.next_id.load(Ordering::Relaxed)
+    /// The id allocator of this tree, for sub-scans and live updates.
+    pub fn ids(&self) -> Arc<AtomicU32> {
+        self.ctl.ids.clone()
     }
 }
 
@@ -289,53 +291,14 @@ fn scan_dir(
         if bytes == b"." || bytes == b".." {
             continue;
         }
-        // The entry may vanish between readdir and statx: skip it silently.
-        let Ok(st) = rustix::fs::statx(
-            &fd,
-            name,
-            AtFlags::SYMLINK_NOFOLLOW,
-            StatxFlags::BASIC_STATS,
-        ) else {
+        let Some((mut entry, sub)) = stat_entry(&fd, name, &w.path, mounts, opts) else {
             continue;
         };
-        let mut kind = match FileType::from_raw_mode(st.stx_mode as _) {
-            FileType::Directory => Kind::Dir,
-            FileType::RegularFile => Kind::File,
-            FileType::Symlink => Kind::Symlink,
-            _ => Kind::Other,
-        };
-        let id = ctl.next_id.fetch_add(1, Ordering::Relaxed);
-        if kind == Kind::Dir {
-            let child = w.path.join(OsStr::from_bytes(bytes));
-            if mounts.is_mount_point(&child) {
-                let class = mounts.class_at(&child).unwrap_or(FsClass::Local);
-                if opts.one_fs || class != FsClass::Local {
-                    kind = Kind::MountPoint;
-                }
-            }
-            if kind == Kind::Dir {
-                subdirs.push(Work { id, path: child });
-            }
+        entry.id = ctl.ids.fetch_add(1, Ordering::Relaxed);
+        if let Some(path) = sub {
+            subdirs.push(Work { id: entry.id, path });
         }
-        batch.push(Entry {
-            id,
-            name: bytes.to_vec(),
-            kind,
-            size_apparent: if kind == Kind::MountPoint {
-                0
-            } else {
-                st.stx_size
-            },
-            size_disk: if kind == Kind::MountPoint {
-                0
-            } else {
-                st.stx_blocks * 512
-            },
-            mtime: st.stx_mtime.tv_sec,
-            nlink: st.stx_nlink,
-            dev: rustix::fs::makedev(st.stx_dev_major, st.stx_dev_minor),
-            ino: st.stx_ino,
-        });
+        batch.push(entry);
         if batch.len() >= BATCH {
             ev_tx
                 .send(ScanEvent::Batch {
@@ -359,6 +322,72 @@ fn scan_dir(
     for s in subdirs {
         work_tx.send(s).ok();
     }
+}
+
+/// stat one directory entry relative to its directory fd. Returns the entry (id 0) and, for
+/// folders the scan should descend into, the folder's path. `None` if it vanished.
+fn stat_entry(
+    fd: &OwnedFd,
+    name: &CStr,
+    dir: &Path,
+    mounts: &MountTable,
+    opts: ScanOpts,
+) -> Option<(Entry, Option<PathBuf>)> {
+    let bytes = name.to_bytes();
+    let st =
+        rustix::fs::statx(fd, name, AtFlags::SYMLINK_NOFOLLOW, StatxFlags::BASIC_STATS).ok()?;
+    let mut kind = match FileType::from_raw_mode(st.stx_mode as _) {
+        FileType::Directory => Kind::Dir,
+        FileType::RegularFile => Kind::File,
+        FileType::Symlink => Kind::Symlink,
+        _ => Kind::Other,
+    };
+    let mut sub = None;
+    if kind == Kind::Dir {
+        let child = dir.join(OsStr::from_bytes(bytes));
+        if mounts.is_mount_point(&child) {
+            let class = mounts.class_at(&child).unwrap_or(FsClass::Local);
+            if opts.one_fs || class != FsClass::Local {
+                kind = Kind::MountPoint;
+            }
+        }
+        if kind == Kind::Dir {
+            sub = Some(child);
+        }
+    }
+    let mount = kind == Kind::MountPoint;
+    Some((
+        Entry {
+            id: 0,
+            name: bytes.to_vec(),
+            kind,
+            size_apparent: if mount { 0 } else { st.stx_size },
+            size_disk: if mount { 0 } else { st.stx_blocks * 512 },
+            mtime: st.stx_mtime.tv_sec,
+            nlink: st.stx_nlink,
+            dev: rustix::fs::makedev(st.stx_dev_major, st.stx_dev_minor),
+            ino: st.stx_ino,
+        },
+        sub,
+    ))
+}
+
+/// One non-recursive listing of `dir` (ids left at 0), for live updates.
+pub fn list_dir(dir: &Path, mounts: &MountTable, opts: ScanOpts) -> io::Result<Vec<Entry>> {
+    let flags = OFlags::RDONLY | OFlags::DIRECTORY | OFlags::NOFOLLOW | OFlags::CLOEXEC;
+    let fd = rustix::fs::open(dir, flags, Mode::empty())?;
+    let mut out = vec![];
+    for ent in Dir::read_from(&fd)? {
+        let Ok(ent) = ent else { break };
+        let name = ent.file_name();
+        if matches!(name.to_bytes(), b"." | b"..") {
+            continue;
+        }
+        if let Some((e, _)) = stat_entry(&fd, name, dir, mounts, opts) {
+            out.push(e);
+        }
+    }
+    Ok(out)
 }
 
 #[cfg(test)]

@@ -1,8 +1,8 @@
 use std::borrow::Cow;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::ffi::OsStr;
 use std::os::unix::ffi::OsStrExt;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 pub type NodeId = u32;
 pub const NONE: NodeId = u32::MAX;
@@ -60,6 +60,16 @@ impl Node {
             nlink: 1,
         }
     }
+}
+
+/// What `apply_listing` changed.
+#[derive(Debug, Default)]
+pub struct ListingDiff {
+    pub removed: Vec<NodeId>,
+    pub changed: Vec<NodeId>,
+    pub added: Vec<NodeId>,
+    /// Added entries that are folders and still need scanning.
+    pub new_dirs: Vec<NodeId>,
 }
 
 /// Everything the scanner knows about one directory entry.
@@ -309,6 +319,111 @@ impl Tree {
             self.nodes[x as usize].flags |= F_REMOVED;
         }
     }
+
+    pub fn child_by_name(&self, id: NodeId, name: &[u8]) -> Option<NodeId> {
+        self.children(id).find(|c| self.name(*c) == name)
+    }
+
+    /// Node for an absolute path inside this tree, if it has been scanned.
+    pub fn find(&self, path: &Path) -> Option<NodeId> {
+        let root = Path::new(OsStr::from_bytes(self.name(self.root)));
+        let rel = path.strip_prefix(root).ok()?;
+        let mut cur = self.root;
+        for comp in rel.components() {
+            cur = self.child_by_name(cur, comp.as_os_str().as_bytes())?;
+        }
+        Some(cur)
+    }
+
+    /// Drop everything below `id` (before re-scanning it) and mark it pending again.
+    pub fn clear_children(&mut self, id: NodeId) {
+        if !self.exists(id) {
+            return;
+        }
+        let kids: Vec<NodeId> = self.children(id).collect();
+        for k in kids {
+            self.remove(k);
+        }
+        self.nodes[id as usize].flags &= !F_SCANNED;
+        self.generation += 1;
+    }
+
+    /// Bring one directory's direct children in line with a fresh listing of it.
+    /// `alloc` hands out ids for new entries. New sub-folders come back in `new_dirs`
+    /// so the caller can scan them.
+    pub fn apply_listing(
+        &mut self,
+        dir: NodeId,
+        listing: Vec<Entry>,
+        alloc: &mut dyn FnMut() -> NodeId,
+    ) -> ListingDiff {
+        let mut diff = ListingDiff::default();
+        if !self.exists(dir) {
+            return diff;
+        }
+        let mut existing: HashMap<Vec<u8>, NodeId> = self
+            .children(dir)
+            .map(|c| (self.name(c).to_vec(), c))
+            .collect();
+        let mut added = vec![];
+        for mut e in listing {
+            match existing.remove(&e.name) {
+                Some(id) if self.nodes[id as usize].kind == e.kind => {
+                    let n = &self.nodes[id as usize];
+                    let file_like = !matches!(n.kind, Kind::Dir | Kind::Denied | Kind::MountPoint);
+                    let changed = n.mtime != e.mtime
+                        || (file_like
+                            && (n.size_apparent != e.size_apparent || n.size_disk != e.size_disk));
+                    if changed && file_like {
+                        let dup = self.is_hardlink_dup(id);
+                        let (a, d) = if dup {
+                            (0, 0)
+                        } else {
+                            (e.size_apparent, e.size_disk)
+                        };
+                        let (da, dd) = (
+                            a as i64 - n.size_apparent as i64,
+                            d as i64 - n.size_disk as i64,
+                        );
+                        let node = &mut self.nodes[id as usize];
+                        node.size_apparent = a;
+                        node.size_disk = d;
+                        node.mtime = e.mtime;
+                        node.nlink = e.nlink;
+                        self.apply_delta(dir, da, dd, 0, e.mtime);
+                        diff.changed.push(id);
+                    } else if changed {
+                        self.nodes[id as usize].mtime = self.nodes[id as usize].mtime.max(e.mtime);
+                    }
+                }
+                Some(id) => {
+                    // Same name, different kind (file replaced by a folder…): replace it.
+                    self.remove(id);
+                    diff.removed.push(id);
+                    e.id = alloc();
+                    added.push(e);
+                }
+                None => {
+                    e.id = alloc();
+                    added.push(e);
+                }
+            }
+        }
+        for (_, id) in existing {
+            self.remove(id);
+            diff.removed.push(id);
+        }
+        for e in &added {
+            diff.added.push(e.id);
+            if e.kind == Kind::Dir {
+                diff.new_dirs.push(e.id);
+            }
+        }
+        if !added.is_empty() {
+            self.insert_batch(dir, added);
+        }
+        diff
+    }
 }
 
 #[cfg(test)]
@@ -371,5 +486,52 @@ mod tests {
         assert!(!t.exists(3));
         t.insert_batch(7, vec![e(3, "x", Kind::File, 5)]);
         assert_eq!(t.get(0).size_disk, 6);
+    }
+
+    #[test]
+    fn find_clear_and_listing_diff() {
+        let mut t = Tree::new(b"/r");
+        t.insert_batch(0, vec![e(1, "a", Kind::Dir, 4), e(2, "f", Kind::File, 10)]);
+        t.insert_batch(1, vec![e(3, "g", Kind::File, 100)]);
+        assert_eq!(t.find(Path::new("/r/a/g")), Some(3));
+        assert_eq!(t.find(Path::new("/r")), Some(0));
+        assert_eq!(t.find(Path::new("/elsewhere")), None);
+
+        // Listing of /r: f grew to 50, a stays, new file n and new dir d appear.
+        let mut next = 10;
+        let mut alloc = || {
+            next += 1;
+            next
+        };
+        let mut f2 = e(0, "f", Kind::File, 50);
+        f2.mtime = 99;
+        let listing = vec![
+            e(0, "a", Kind::Dir, 4),
+            f2,
+            e(0, "n", Kind::File, 7),
+            e(0, "d", Kind::Dir, 4),
+        ];
+        let diff = t.apply_listing(0, listing, &mut alloc);
+        assert_eq!(diff.changed, vec![2]);
+        assert_eq!(diff.added.len(), 2);
+        assert_eq!(diff.new_dirs.len(), 1);
+        assert_eq!(t.get(0).size_disk, 4 + 100 + 50 + 7 + 4);
+        // f disappears.
+        let diff = t.apply_listing(
+            0,
+            vec![
+                e(0, "a", Kind::Dir, 4),
+                e(0, "n", Kind::File, 7),
+                e(0, "d", Kind::Dir, 4),
+            ],
+            &mut alloc,
+        );
+        assert_eq!(diff.removed, vec![2]);
+        assert_eq!(t.get(0).size_disk, 4 + 100 + 7 + 4);
+
+        t.clear_children(1);
+        assert!(!t.is_scanned(1));
+        assert_eq!(t.get(1).size_disk, 4);
+        assert_eq!(t.get(0).size_disk, 4 + 7 + 4);
     }
 }

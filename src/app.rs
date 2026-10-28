@@ -1,17 +1,16 @@
-//! The app shell: which screen is showing, and switching between them.
+//! The app shell: which screen is showing, switching between them, and the shared settings.
 
 use std::path::PathBuf;
 use std::sync::Arc;
 
 use egui::{Theme, ViewportCommand};
 
-use crate::scan::ScanOpts;
+use crate::config::Config;
 use crate::scan::mounts::MountTable;
 use crate::screens::browse::{Browse, BrowseOut};
 use crate::screens::picker::Picker;
 use crate::testhook::{Hook, Obj};
 use crate::ui::style;
-use crate::view::SizeMode;
 
 enum Screen {
     Picker(Picker),
@@ -19,30 +18,36 @@ enum Screen {
 }
 
 pub struct App {
-    theme: Theme,
+    cfg: Config,
+    /// Why the settings file couldn't be read, shown once on the first browse screen.
+    cfg_error: Option<String>,
     mounts: Arc<MountTable>,
-    opts: ScanOpts,
-    mode: SizeMode,
     initial_filter: Option<String>,
     screen: Screen,
     hook: Hook,
 }
 
+fn theme_of(cfg: &Config) -> Theme {
+    if cfg.dark() {
+        Theme::Dark
+    } else {
+        Theme::Light
+    }
+}
+
 impl App {
     pub fn new(
         ctx: &egui::Context,
-        theme: Theme,
+        cfg: Config,
+        cfg_error: Option<String>,
         path: Option<PathBuf>,
-        opts: ScanOpts,
-        mode: SizeMode,
         filter: Option<String>,
     ) -> App {
         let mounts = Arc::new(MountTable::read());
         let mut app = App {
-            theme,
+            cfg,
+            cfg_error,
             mounts: mounts.clone(),
-            opts,
-            mode,
             initial_filter: filter,
             screen: Screen::Picker(Picker::new(&mounts)),
             hook: Hook::from_env(),
@@ -61,10 +66,10 @@ impl App {
         let b = Browse::new(
             ctx,
             path,
-            self.opts,
-            self.mode,
+            self.cfg.clone(),
             self.mounts.clone(),
             self.initial_filter.take(),
+            self.cfg_error.take(),
         );
         self.screen = Screen::Browse(Box::new(b));
     }
@@ -79,21 +84,28 @@ impl App {
 impl eframe::App for App {
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
         let ctx = ui.ctx().clone();
-        // Ctrl+Shift+T flips the theme (no settings screen yet).
+        // Ctrl+Shift+T flips the theme (and remembers it).
         if ui.input_mut(|i| {
             i.consume_key(
                 egui::Modifiers::COMMAND | egui::Modifiers::SHIFT,
                 egui::Key::T,
             )
         }) {
-            self.theme = if self.theme == Theme::Dark {
-                Theme::Light
+            self.cfg.theme = if self.cfg.dark() {
+                "light".into()
             } else {
-                Theme::Dark
+                "dark".into()
             };
-            ctx.set_theme(self.theme);
+            if let Screen::Browse(b) = &mut self.screen {
+                b.cfg.theme = self.cfg.theme.clone();
+            }
+            let _ = self.cfg.save();
         }
-        let p = style::palette(self.theme);
+        let theme = theme_of(&self.cfg);
+        if ctx.theme() != theme {
+            ctx.set_theme(theme);
+        }
+        let p = style::palette(theme);
         match &mut self.screen {
             Screen::Picker(picker) => {
                 if let Some(path) = picker.ui(ui, p) {
@@ -101,7 +113,12 @@ impl eframe::App for App {
                 }
             }
             Screen::Browse(b) => {
-                if let BrowseOut::OpenPicker = b.ui(ui, p) {
+                let out = b.ui(ui, p);
+                // Settings changed on the browse screen are the app's settings now.
+                if b.cfg != self.cfg {
+                    self.cfg = b.cfg.clone();
+                }
+                if let BrowseOut::OpenPicker = out {
                     self.picker(&ctx);
                 }
             }

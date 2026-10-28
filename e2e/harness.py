@@ -55,13 +55,19 @@ def fake_bin(dirpath: Path, record: Path):
 
 
 class App:
-    def __init__(self, display: Display, args, tmp: Path, size=(1200, 760)):
+    def __init__(self, display: Display, args, tmp: Path, size=(1200, 760), config_home=None):
         self.display = display
         self.state_file = tmp / "state.json"
         self.record = tmp / "launched.txt"
         bindir = tmp / "bin"
         fake_bin(bindir, self.record)
         env = dict(display.env, CANOPY_STATE_FILE=str(self.state_file), TERMINAL="fake-term")
+        # Never read or write the real ~/.config/canopy.
+        env["XDG_CONFIG_HOME"] = str(config_home or (tmp / "config"))
+        # A private HOME too: reports default to ~/, and nothing may land in the real one.
+        self.home = tmp / "home"
+        self.home.mkdir(exist_ok=True)
+        env["HOME"] = str(self.home)
         env["PATH"] = f"{bindir}:{env['PATH']}"
         self.stderr = tmp / "stderr.txt"
         self.proc = subprocess.Popen([str(BIN), *args], env=env, stdout=subprocess.DEVNULL, stderr=open(self.stderr, "w"))
@@ -217,13 +223,14 @@ class CanopyCase(unittest.TestCase):
                 pass
         shutil.rmtree(self.tmp, ignore_errors=True)
 
-    def launch(self, *args, size=(1200, 760)):
-        a = App(display(), [str(x) for x in args], self.tmp, size=size)
+    def launch(self, *args, size=(1200, 760), config_home=None):
+        a = App(display(), [str(x) for x in args], self.tmp, size=size, config_home=config_home)
         self.apps.append(a)
         return a
 
     def run_cli(self, *args):
-        return subprocess.run([str(BIN), *map(str, args)], env=display().env, capture_output=True, text=True, timeout=10)
+        env = dict(display().env, XDG_CONFIG_HOME=str(self.tmp / "config"))
+        return subprocess.run([str(BIN), *map(str, args)], env=env, capture_output=True, text=True, timeout=60)
 
 
 def write(path: Path, size: int, sparse=True):

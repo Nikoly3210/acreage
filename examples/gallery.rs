@@ -402,6 +402,7 @@ impl Gallery {
                 fs_total: 1000 * GB,
                 views: 3,
                 tag_counts: [3, 1, 2, 0],
+                live: Some((1204, false)),
             },
         );
     }
@@ -647,6 +648,7 @@ impl Gallery {
                     fs_total: 1000 * GB,
                     views: 1,
                     tag_counts: [0; 4],
+                    live: None,
                 },
             );
         }

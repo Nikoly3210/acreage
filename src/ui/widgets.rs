@@ -592,6 +592,8 @@ pub struct StatusInfo<'a> {
     pub fs_total: u64,
     pub views: usize,
     pub tag_counts: [u32; 4],
+    /// Live updates: (folders watched, hit the watch limit). None when off.
+    pub live: Option<(usize, bool)>,
 }
 
 /// Returns true when the "unreadable" link was clicked.
@@ -667,6 +669,9 @@ pub fn status_bar(ui: &mut Ui, p: &Palette, s: &StatusInfo) -> bool {
                     if s.views > 1 {
                         reserve += 70.0;
                     }
+                    if s.live.is_some() {
+                        reserve += 60.0;
+                    }
                     if s.tag_counts.iter().any(|c| *c > 0) {
                         reserve += 120.0;
                     }
@@ -700,6 +705,19 @@ pub fn status_bar(ui: &mut Ui, p: &Palette, s: &StatusInfo) -> bool {
                     if s.views > 1 {
                         ui.separator();
                         ui.label(rt(format!("{} views", s.views), p.text_muted));
+                    }
+                    if let Some((n, limited)) = s.live {
+                        ui.separator();
+                        let (txt, col) = if limited {
+                            ("Live (limited)", p.warning)
+                        } else {
+                            ("Live", p.success)
+                        };
+                        ui.label(rt(format!("{} {txt}", icon::BROADCAST), col))
+                            .on_hover_text(format!(
+                                "Watching {} folders for changes",
+                                group_digits(n as u64)
+                            ));
                     }
                     if s.tag_counts.iter().any(|c| *c > 0) {
                         ui.separator();
