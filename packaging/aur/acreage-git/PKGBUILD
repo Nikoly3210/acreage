@@ -1,0 +1,53 @@
+# Maintainer: OWNER <EMAIL>
+pkgname=acreage-git
+pkgver=0.1.0.r0.g0000000
+pkgrel=1
+pkgdesc="Live, labelled treemap of disk usage for Linux"
+arch=('x86_64' 'aarch64')
+url="REPO_URL"
+license=('GPL-3.0-or-later')
+depends=('gcc-libs' 'glibc' 'libxkbcommon' 'fontconfig' 'hicolor-icon-theme')
+optdepends=('xdg-utils: open files and folders'
+            'libglvnd: OpenGL rendering')
+makedepends=('cargo' 'git')
+provides=('acreage')
+conflicts=('acreage')
+source=("acreage::git+REPO_URL.git")
+sha256sums=("SKIP")
+
+pkgver() {
+  cd acreage
+  git describe --long --tags --abbrev=7 2>/dev/null | sed 's/^v//;s/\([^-]*-g\)/r\1/;s/-/./g' ||
+    printf '0.1.0.r%s.g%s' "$(git rev-list --count HEAD)" "$(git rev-parse --short=7 HEAD)"
+}
+
+prepare() {
+  cd acreage
+  export RUSTUP_TOOLCHAIN=stable
+  cargo fetch --locked --target "$(rustc -vV | sed -n 's/host: //p')"
+}
+
+build() {
+  cd acreage
+  export RUSTUP_TOOLCHAIN=stable
+  export CARGO_TARGET_DIR=target
+  cargo build --frozen --release
+}
+
+check() {
+  cd acreage
+  export RUSTUP_TOOLCHAIN=stable
+  cargo test --frozen --lib
+}
+
+package() {
+  cd acreage
+  install -Dm755 target/release/acreage "$pkgdir/usr/bin/acreage"
+  install -Dm644 packaging/acreage.desktop "$pkgdir/usr/share/applications/acreage.desktop"
+  install -Dm644 assets/acreage.svg "$pkgdir/usr/share/icons/hicolor/scalable/apps/acreage.svg"
+  for s in 16 22 24 32 48 64 128 256 512; do
+    install -Dm644 "assets/icons/${s}x${s}/acreage.png" "$pkgdir/usr/share/icons/hicolor/${s}x${s}/apps/acreage.png"
+  done
+  install -Dm644 README.md "$pkgdir/usr/share/doc/acreage/README.md"
+  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/acreage/LICENSE"
+}

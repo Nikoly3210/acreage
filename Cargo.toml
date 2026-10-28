@@ -27,3 +27,9 @@ debug = "line-tables-only"
 
 [profile.dev.package."*"]
 debug = false
+
+# Release builds ship to users: smaller, stripped binary.
+[profile.release]
+strip = true
+lto = "thin"
+codegen-units = 4

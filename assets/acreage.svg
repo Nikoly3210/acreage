@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- INTERIM icon, drawn from the logo brief in replica/brand.md (a field from above, split into
+     unequal plots, one in the brand green). Replace with the designed mark before 1.0. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <rect x="4" y="4" width="120" height="120" rx="26" fill="#181c22"/>
+  <rect x="4.5" y="4.5" width="119" height="119" rx="25.5" fill="none" stroke="#2c323b" stroke-width="1"/>
+  <!-- squarified-style plots, unequal on purpose (not a four-square grid) -->
+  <rect x="18" y="18" width="52" height="92" rx="5" fill="#b8d44a"/>
+  <rect x="76" y="18" width="34" height="50" rx="5" fill="#8e9aab"/>
+  <rect x="76" y="74" width="34" height="20" rx="4" fill="#5b6470"/>
+  <rect x="76" y="98" width="16" height="12" rx="3" fill="#414b59"/>
+  <rect x="96" y="98" width="14" height="12" rx="3" fill="#414b59"/>
+</svg>
