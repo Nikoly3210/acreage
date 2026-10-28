@@ -11,9 +11,37 @@ See what's taking up your disk. A live map of every folder and file, labelled an
 
 ## Install
 
-- Arch: `yay -S acreage` (AUR, from the first release)
-- Flathub: coming
-- From source (recent stable Rust; developed with 1.99):
+AUR and Flathub packages are coming. Until then, pick one of these.
+
+### Ready-made binary (x86_64, glibc 2.35 or newer)
+
+Download from the [latest release](https://github.com/Nikoly3210/acreage/releases/latest), check it and install for your user:
+
+```
+curl -LO https://github.com/Nikoly3210/acreage/releases/download/v0.1.0/acreage-0.1.0-x86_64-linux.tar.gz
+curl -LO https://github.com/Nikoly3210/acreage/releases/download/v0.1.0/acreage-0.1.0-x86_64-linux.tar.gz.sha256
+sha256sum -c acreage-0.1.0-x86_64-linux.tar.gz.sha256
+tar xzf acreage-0.1.0-x86_64-linux.tar.gz
+cd acreage-0.1.0-x86_64-linux
+install -Dm755 acreage ~/.local/bin/acreage
+install -Dm644 acreage.desktop ~/.local/share/applications/acreage.desktop
+install -Dm644 acreage.svg ~/.local/share/icons/hicolor/scalable/apps/acreage.svg
+for d in icons/*/; do install -Dm644 "$d/acreage.png" ~/.local/share/icons/hicolor/"$(basename "$d")"/apps/acreage.png; done
+```
+
+`~/.local/bin` must be on your `PATH`. It needs libxkbcommon (with its X11 part), fontconfig and OpenGL, which desktop systems already have; on a minimal Debian or Ubuntu install add `libxkbcommon-x11-0 libfontconfig1 libgl1`. To remove it, delete the same files.
+
+### Arch Linux: build the package yourself
+
+The PKGBUILDs that will go to the AUR are in this repository. `makepkg` builds a normal package that pacman tracks and can remove:
+
+```
+git clone https://github.com/Nikoly3210/acreage acreage
+cd acreage/packaging/aur/acreage        # the v0.1.0 release; acreage-git builds the latest commit
+makepkg -si
+```
+
+### From source (recent stable Rust; developed with 1.99)
 
 ```
 git clone https://github.com/Nikoly3210/acreage acreage
