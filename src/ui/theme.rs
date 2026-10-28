@@ -243,5 +243,6 @@ pub mod layout {
         pub const MIN_CHILD_AREA: f32 = 144.0;
         pub const MIN_CHILD_AREA_COARSE: f32 = 900.0;
         pub const MIN_CHILD_AREA_FINE: f32 = 36.0;
+        pub const MIN_MOUNT_SIDE: f32 = 90.0;
     }
 }

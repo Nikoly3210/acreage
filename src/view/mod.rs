@@ -17,7 +17,15 @@ pub struct LayoutParams {
     pub min_block: f32,
     /// Children smaller than this (px²) are folded into one "small items" block.
     pub min_child_area: f32,
+    /// Give "other filesystem" blocks (0 bytes on this filesystem) a small display-only
+    /// weight so they can be seen and scanned into. Off while a filter is active.
+    pub show_mount_points: bool,
+    /// Narrowest a mount point block gets (px), so its label fits even as a thin strip.
+    pub min_mount_side: f32,
 }
+
+/// Share of its siblings' total a mount point block is drawn with (it counts 0 in sizes).
+const MOUNT_POINT_WEIGHT: f64 = 0.03;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Item {
@@ -174,6 +182,20 @@ fn place(
         .map(|c| (size(c), c))
         .filter(|(s, _)| *s > 0)
         .collect();
+    if p.show_mount_points {
+        let total: u64 = kids.iter().map(|k| k.0).sum();
+        let body_area = (rect.w * rect.h).max(1.0) as f64;
+        // A share of the siblings; wide enough for a label even when laid out as a strip
+        // along the long side (area = side × long side); at most a quarter of the folder.
+        let strip = p.min_mount_side as f64 * rect.w.max(rect.h) as f64;
+        let share = MOUNT_POINT_WEIGHT.max(strip / body_area).min(0.25);
+        let weight = ((total as f64 * share) as u64).max(1);
+        kids.extend(
+            tree.children(id)
+                .filter(|c| tree.get(*c).kind == Kind::MountPoint && size(*c) == 0)
+                .map(|c| (weight, c)),
+        );
+    }
     if kids.is_empty() {
         return;
     }
@@ -381,7 +403,11 @@ impl View {
             None => node_size(tree, id, mode),
         };
         let mut laid = std::mem::take(&mut self.laid);
-        layout(tree, self.zoom, bounds, &size_fn, p, &mut laid);
+        let p = LayoutParams {
+            show_mount_points: self.filter.is_none(),
+            ..*p
+        };
+        layout(tree, self.zoom, bounds, &size_fn, &p, &mut laid);
         self.laid = laid;
         self.key = Some(key);
         self.last_layout = Instant::now();
@@ -487,6 +513,8 @@ mod tests {
         gap: 1.0,
         min_block: 3.0,
         min_child_area: 144.0,
+        show_mount_points: true,
+        min_mount_side: 90.0,
     };
 
     #[test]

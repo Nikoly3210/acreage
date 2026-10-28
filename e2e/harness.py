@@ -55,7 +55,7 @@ def fake_bin(dirpath: Path, record: Path):
 
 
 class App:
-    def __init__(self, display: Display, args, tmp: Path, size=(1200, 760), config_home=None):
+    def __init__(self, display: Display, args, tmp: Path, size=(1200, 760), config_home=None, env_extra=None):
         self.display = display
         self.state_file = tmp / "state.json"
         self.record = tmp / "launched.txt"
@@ -68,6 +68,7 @@ class App:
         self.home = tmp / "home"
         self.home.mkdir(exist_ok=True)
         env["HOME"] = str(self.home)
+        env.update(env_extra or {})
         env["PATH"] = f"{bindir}:{env['PATH']}"
         self.stderr = tmp / "stderr.txt"
         self.proc = subprocess.Popen([str(BIN), *args], env=env, stdout=subprocess.DEVNULL, stderr=open(self.stderr, "w"))
@@ -223,8 +224,8 @@ class CanopyCase(unittest.TestCase):
                 pass
         shutil.rmtree(self.tmp, ignore_errors=True)
 
-    def launch(self, *args, size=(1200, 760), config_home=None):
-        a = App(display(), [str(x) for x in args], self.tmp, size=size, config_home=config_home)
+    def launch(self, *args, size=(1200, 760), config_home=None, env=None):
+        a = App(display(), [str(x) for x in args], self.tmp, size=size, config_home=config_home, env_extra=env)
         self.apps.append(a)
         return a
 

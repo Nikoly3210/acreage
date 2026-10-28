@@ -396,6 +396,7 @@ impl Gallery {
                 scan: w::ScanStatus::Scanning {
                     dirs: 41_213,
                     bytes: self.tree.size,
+                    of: Some(self.tree.size * 3 / 2),
                 },
                 selection: None,
                 fs_used: 812 * GB,

@@ -194,6 +194,18 @@ pub fn paint_block(
         BlockKind::MountPoint { .. } => {
             if let Some(body) = dir_body(rect) {
                 painter.rect_filled(body, 0, p.tm_canvas);
+                // Say how to go inside; hidden when there's no room for it.
+                let font = fonts::font(ty::TM_FILE);
+                if let Some(g) = elide(
+                    &painter,
+                    "Double-click or Enter to scan it",
+                    &font,
+                    p.text_muted,
+                    body.width() - 8.0,
+                )
+                    && body.height() > g.size().y + 8.0 && g.size().x > 40.0 {
+                        painter.galley(body.center() - g.size() / 2.0, g, p.text_muted);
+                    }
             }
         }
         _ => {}

@@ -335,6 +335,16 @@ impl Tree {
         Some(cur)
     }
 
+    /// Turn an "other filesystem" node into a folder to scan into it.
+    pub fn reopen_as_dir(&mut self, id: NodeId) {
+        if self.exists(id) && self.nodes[id as usize].kind == Kind::MountPoint {
+            let n = &mut self.nodes[id as usize];
+            n.kind = Kind::Dir;
+            n.flags &= !F_SCANNED;
+            self.generation += 1;
+        }
+    }
+
     /// Drop everything below `id` (before re-scanning it) and mark it pending again.
     pub fn clear_children(&mut self, id: NodeId) {
         if !self.exists(id) {

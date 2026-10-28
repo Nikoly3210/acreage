@@ -62,6 +62,10 @@ struct Ctl {
     finished: AtomicBool,
     ids: Arc<AtomicU32>,
     pending: AtomicUsize,
+    /// Test hook (CANOPY_TEST_PAUSE_AFTER): pause after this many folders, so e2e tests can
+    /// act while a scan is genuinely in progress. usize::MAX = never.
+    pause_after: AtomicUsize,
+    done: AtomicUsize,
 }
 
 struct Work {
@@ -130,6 +134,15 @@ impl Scanner {
             finished: AtomicBool::new(false),
             ids,
             pending: AtomicUsize::new(1),
+            pause_after: AtomicUsize::new(if root_id == 0 {
+                std::env::var("CANOPY_TEST_PAUSE_AFTER")
+                    .ok()
+                    .and_then(|v| v.parse().ok())
+                    .unwrap_or(usize::MAX)
+            } else {
+                usize::MAX
+            }),
+            done: AtomicUsize::new(0),
         });
         let (ev_tx, events) = unbounded();
         let (work_tx, work_rx) = unbounded::<Work>();
@@ -223,6 +236,11 @@ fn worker(
         match work_rx.recv_timeout(Duration::from_millis(50)) {
             Ok(w) => {
                 scan_dir(ctl, ev_tx, work_tx, mounts, opts, w);
+                if ctl.done.fetch_add(1, Ordering::Relaxed) + 1
+                    == ctl.pause_after.load(Ordering::Relaxed)
+                {
+                    ctl.paused.store(true, Ordering::Relaxed);
+                }
                 wake();
                 if ctl.pending.fetch_sub(1, Ordering::AcqRel) == 1
                     && !ctl.cancel.load(Ordering::Relaxed)
@@ -345,8 +363,12 @@ fn stat_entry(
     let mut sub = None;
     if kind == Kind::Dir {
         let child = dir.join(OsStr::from_bytes(bytes));
-        if mounts.is_mount_point(&child) {
+        if mounts.is_boundary(&child) {
             let class = mounts.class_at(&child).unwrap_or(FsClass::Local);
+            // proc, sysfs, tmpfs, cgroup…: nothing on disk to measure, so not even a block.
+            if class == FsClass::Pseudo {
+                return None;
+            }
             if opts.one_fs || class != FsClass::Local {
                 kind = Kind::MountPoint;
             }

@@ -9,6 +9,7 @@ use std::time::{Duration, Instant};
 
 use super::{Browse, ScanState, Sub};
 use crate::model::{Kind, NodeId, Tree};
+use crate::scan::mounts::FsClass;
 use crate::scan::{ScanEvent, ScanOpts, Scanner};
 use crate::ui::theme::motion;
 use crate::ui::widgets::{ToastKind, group_digits};
@@ -39,6 +40,8 @@ impl Browse {
         self.opts = ScanOpts {
             one_fs: self.cfg.one_filesystem,
         };
+        // Which mount points below the root still count as this filesystem (btrfs subvolumes).
+        self.mounts = Arc::new(self.mounts.for_scan(&self.root_path));
         self.tree = Tree::new(self.root_path.as_os_str().as_bytes());
         for t in &mut self.tabs {
             let (src, f, hide) = (
@@ -107,6 +110,93 @@ impl Browse {
             scanner: s,
             user: true,
         });
+    }
+
+    /// Scan into an "other filesystem" block (fixes.md #2).
+    pub(super) fn enter_mount(&mut self, id: NodeId) {
+        if !self.tree.exists(id) || self.tree.get(id).kind != Kind::MountPoint {
+            return;
+        }
+        let path = self.tree.path(id);
+        match self.mounts.class_at(&path) {
+            Some(FsClass::Pseudo) => {
+                self.toast(
+                    ToastKind::Info,
+                    format!(
+                        "{} is a system filesystem; there's nothing on disk to measure.",
+                        path.display()
+                    ),
+                );
+                return;
+            }
+            Some(FsClass::Network) => {
+                self.toast(
+                    ToastKind::Info,
+                    format!(
+                        "Scanning {} over the network; this can take a while.",
+                        path.display()
+                    ),
+                );
+            }
+            _ => {}
+        }
+        self.entered_mounts.insert(path);
+        self.enter_mount_quiet(id);
+    }
+
+    fn enter_mount_quiet(&mut self, id: NodeId) {
+        if self.tree.exists(id) && self.tree.get(id).kind == Kind::MountPoint {
+            self.tree.reopen_as_dir(id);
+            let path = self.tree.path(id);
+            let s = Scanner::start_at(
+                path,
+                id,
+                self.ids.clone(),
+                self.opts,
+                self.mounts.clone(),
+                self.wake(),
+            );
+            self.subs.push(Sub {
+                root: id,
+                scanner: s,
+                user: false,
+            });
+        }
+    }
+
+    /// Bytes a whole-mount scan should find (the filesystem's used space), for a real %.
+    pub(super) fn expected_bytes(&self) -> Option<u64> {
+        let is_mount_root = self
+            .mounts
+            .mount_of(&self.root_path)
+            .is_some_and(|m| m.mount_point == self.root_path);
+        (is_mount_root && self.mode == crate::view::SizeMode::Disk && self.fs_used > 0)
+            .then_some(self.fs_used)
+    }
+
+    /// `+` / `-`: one step more or less detail, remembered.
+    pub(super) fn step_detail(&mut self, dir: i32) {
+        use crate::config::Detail::*;
+        let levels = [Coarse, Balanced, Fine];
+        let i = levels
+            .iter()
+            .position(|d| *d == self.cfg.detail)
+            .unwrap_or(1) as i32;
+        let next = levels[(i + dir).clamp(0, 2) as usize];
+        if next != self.cfg.detail {
+            self.cfg.detail = next;
+            for t in &mut self.tabs {
+                t.view.invalidate();
+            }
+            let _ = self.cfg.save();
+        }
+        let name = match next {
+            Coarse => "fewer, bigger blocks",
+            Balanced => "balanced",
+            Fine => "every file that fits",
+        };
+        self.toasts.retain(|t| !t.text.starts_with("Detail: "));
+        self.toast(ToastKind::Info, format!("Detail: {name}"));
     }
 
     fn start_sub(&mut self, id: NodeId) {
@@ -200,6 +290,26 @@ impl Browse {
                     self.dirs_done += 1;
                 }
             }
+            // Deleted between being listed and being opened: it's simply gone.
+            ScanEvent::DirError {
+                id,
+                err: std::io::ErrorKind::NotFound,
+            } => {
+                if self.tree.exists(id) && id != self.tree.root {
+                    // Its parents may have gone with it after they were read; drop those too.
+                    let mut gone = id;
+                    while let Some(parent) = self.tree.ancestors(gone).nth(1) {
+                        if parent == self.tree.root
+                            || std::fs::symlink_metadata(self.tree.path(parent)).is_ok()
+                        {
+                            break;
+                        }
+                        gone = parent;
+                    }
+                    self.tree.remove(gone);
+                    self.after_tree_shrank();
+                }
+            }
             ScanEvent::DirError { id, err } => {
                 self.tree.set_denied(id);
                 if !self.errors.iter().any(|(e, _)| *e == id) {
@@ -217,6 +327,15 @@ impl Browse {
                     }
                     self.resolve_tags(true);
                     self.start_watcher();
+                    // Mounts the user scanned into before a full rescan get scanned again.
+                    let again: Vec<NodeId> = self
+                        .entered_mounts
+                        .iter()
+                        .filter_map(|p| self.tree.find(p))
+                        .collect();
+                    for id in again {
+                        self.enter_mount_quiet(id);
+                    }
                 }
                 Some(root) => finished.push(root),
             },

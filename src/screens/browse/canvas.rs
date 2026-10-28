@@ -120,6 +120,8 @@ impl Browse {
         {
             if self.tree.get(n).kind == Kind::Dir {
                 self.zoom_in(n);
+            } else if self.tree.get(n).kind == Kind::MountPoint {
+                self.enter_mount(n);
             } else {
                 self.tabs[self.active].view.selected = Some(n);
             }
@@ -196,7 +198,7 @@ impl Browse {
         let mut chosen = None;
         if let Some(target) = self.menu_target.filter(|t| self.tree.exists(*t)) {
             resp.context_menu(|ui| {
-                chosen = self.menu(ui, p, target).map(|a| (target, a));
+                chosen = self.menu(ui, p, target, false).map(|a| (target, a));
             });
         }
         if let Some((id, a)) = chosen {
@@ -240,7 +242,14 @@ impl Browse {
         out
     }
 
-    fn menu(&self, ui: &mut Ui, p: &Palette, id: NodeId) -> Option<MenuAction> {
+    /// The block menu (S05). `focus_first` puts keyboard focus on the first item (Shift+F10).
+    pub(super) fn menu(
+        &self,
+        ui: &mut Ui,
+        p: &Palette,
+        id: NodeId,
+        focus_first: bool,
+    ) -> Option<MenuAction> {
         use crate::ui::widgets::{MenuItem, menu_header, menu_separator};
         let n = self.tree.get(id);
         let is_dir = n.kind == Kind::Dir;
@@ -251,8 +260,13 @@ impl Browse {
         ui.spacing_mut().item_spacing.y = 0.0;
         let name = self.tree.name_lossy(id);
         menu_header(ui, p, &name);
+        let mut first = focus_first;
         let mut item = |ui: &mut Ui, it: MenuItem, a: MenuAction| {
-            if it.show(ui, p).clicked() {
+            let r = it.show(ui, p);
+            if std::mem::take(&mut first) {
+                r.request_focus();
+            }
+            if r.clicked() {
                 out = Some(a);
                 ui.close();
             }
@@ -290,6 +304,17 @@ impl Browse {
                 MenuItem::new(icon::ARROWS_CLOCKWISE, "Rescan this folder")
                     .enabled(self.tree.is_scanned(id)),
                 MenuAction::Rescan,
+            );
+        }
+        if n.kind == Kind::MountPoint {
+            let pseudo = self.mounts.class_at(&self.tree.path(id))
+                == Some(crate::scan::mounts::FsClass::Pseudo);
+            item(
+                ui,
+                MenuItem::new(icon::HARD_DRIVES, "Scan this filesystem too")
+                    .shortcut("Enter")
+                    .enabled(!pseudo),
+                MenuAction::EnterMount,
             );
         }
         menu_separator(ui, p);

@@ -65,6 +65,7 @@ enum MenuAction {
     Tag(Option<Tag>),
     ZoomIn,
     Rescan,
+    EnterMount,
     Trash,
 }
 
@@ -138,6 +139,12 @@ pub struct Browse {
     /// Last time tags by path were matched against the tree (throttled while scanning).
     resolve_at: f64,
     limit_warned: bool,
+    /// Keyboard-opened context menu (Shift+F10): target and where to show it.
+    kb_menu: Option<(NodeId, egui::Pos2)>,
+    kb_menu_focus: bool,
+    show_keys: bool,
+    /// "Other filesystem" folders the user chose to scan into; re-entered after a full rescan.
+    entered_mounts: std::collections::HashSet<PathBuf>,
     fs_used: u64,
     fs_total: u64,
     mode: SizeMode,
@@ -180,6 +187,8 @@ fn params(detail: Detail) -> LayoutParams {
             Detail::Balanced => lay::tm::MIN_CHILD_AREA,
             Detail::Fine => lay::tm::MIN_CHILD_AREA_FINE,
         },
+        show_mount_points: true,
+        min_mount_side: lay::tm::MIN_MOUNT_SIDE,
     }
 }
 
@@ -239,6 +248,10 @@ impl Browse {
             changed: HashMap::new(),
             resolve_at: 0.0,
             limit_warned: false,
+            kb_menu: None,
+            kb_menu_focus: false,
+            show_keys: false,
+            entered_mounts: Default::default(),
             fs_used,
             fs_total,
             mounts,
@@ -564,6 +577,10 @@ impl Browse {
                 self.rescan_folder(id);
                 Ok(())
             }
+            MenuAction::EnterMount => {
+                self.enter_mount(id);
+                Ok(())
+            }
             MenuAction::Trash => {
                 self.ask_trash(vec![id]);
                 Ok(())
@@ -626,6 +643,16 @@ impl Browse {
         if ui.input_mut(|i| i.consume_key(Modifiers::COMMAND, Key::W)) {
             self.close_tab(self.active);
         }
+        if ui.input_mut(|i| i.consume_key(Modifiers::COMMAND, Key::Q)) {
+            ui.ctx().send_viewport_cmd(egui::ViewportCommand::Close);
+        }
+        if self.kb_menu.is_some() {
+            // The menu's items have focus; egui's own Tab/arrows/Enter drive them.
+            if ui.input_mut(|i| i.consume_key(Modifiers::NONE, Key::Escape)) {
+                self.kb_menu = None;
+            }
+            return;
+        }
         if ui.ctx().egui_wants_keyboard_input() {
             return;
         }
@@ -647,8 +674,14 @@ impl Browse {
             ui.memory_mut(|m| m.request_focus(Id::new(("filter", self.active))));
         }
         if pressed(Key::Escape) {
-            if self.show_help || self.side != Side::None || self.show_presets || self.show_more {
+            if self.show_help
+                || self.show_keys
+                || self.side != Side::None
+                || self.show_presets
+                || self.show_more
+            {
                 self.show_help = false;
+                self.show_keys = false;
                 self.show_presets = false;
                 self.show_more = false;
                 self.side = Side::None;
@@ -689,7 +722,32 @@ impl Browse {
         if pressed(Key::Enter)
             && let Some(s) = self.view().selected
         {
-            self.zoom_in(s);
+            if self.tree.exists(s) && self.tree.get(s).kind == Kind::MountPoint {
+                self.enter_mount(s);
+            } else {
+                self.zoom_in(s);
+            }
+        }
+        // Shift+F10 (the usual "context menu" key) opens the menu for the selected block.
+        if ui.input_mut(|i| i.consume_key(Modifiers::SHIFT, Key::F10))
+            && let Some(s) = self.view().selected.or_else(|| self.hovered_node())
+            && let Some(i) = self.view().index_of(s)
+        {
+            let r = self.view().laid[i].rect;
+            self.kb_menu = Some((s, egui::pos2(r.x + 8.0, r.y + lay::tm::DIR_HEADER_H)));
+            self.kb_menu_focus = true;
+            self.menu_target = Some(s);
+        }
+        // +/- change how much detail the treemap shows.
+        let more = ui.input_mut(|i| {
+            i.consume_key(Modifiers::NONE, Key::Plus) || i.consume_key(Modifiers::NONE, Key::Equals)
+        });
+        let less = pressed(Key::Minus);
+        if more || less {
+            self.step_detail(if more { 1 } else { -1 });
+        }
+        if ui.input_mut(|i| i.consume_key(Modifiers::NONE, Key::Questionmark)) {
+            self.show_keys = !self.show_keys;
         }
         if pressed(Key::P)
             && let Some(s) = &self.scanner
@@ -881,6 +939,7 @@ impl Browse {
                     ScanState::Scanning => w::ScanStatus::Scanning {
                         dirs: self.dirs_done,
                         bytes: self.tree.get(0).size_disk,
+                        of: self.expected_bytes(),
                     },
                     ScanState::Done { secs, .. } => w::ScanStatus::Done {
                         secs,
@@ -939,6 +998,12 @@ impl Browse {
 
         if self.show_help {
             self.help_window(ui, p);
+        }
+        if self.show_keys {
+            self.keys_window(ui, p);
+        }
+        if self.kb_menu.is_some() {
+            self.kb_menu_ui(ui, p);
         }
         if self.show_presets {
             self.presets_menu(ui, p);
@@ -1109,5 +1174,16 @@ impl Browse {
             .bool("hide_dotfiles", self.cfg.hide_dotfiles)
             .list("presets", &presets)
             .str("export_path", &self.export.path)
+            .bool("kb_menu", self.kb_menu.is_some())
+            .bool("keys_window", self.show_keys)
+            .str("detail", &format!("{:?}", self.cfg.detail).to_lowercase())
+            .list(
+                "kinds",
+                &self
+                    .tree
+                    .children(self.tree.root)
+                    .map(|c| format!("{}={:?}", self.tree.name_lossy(c), self.tree.get(c).kind))
+                    .collect::<Vec<_>>(),
+            )
     }
 }

@@ -596,6 +596,112 @@ impl Browse {
         self.show_help = open;
     }
 
+    /// The block menu opened from the keyboard (Shift+F10), at the selected block.
+    pub(super) fn kb_menu_ui(&mut self, ui: &mut Ui, p: &Palette) {
+        let Some((id, pos)) = self.kb_menu else {
+            return;
+        };
+        if !self.tree.exists(id) {
+            self.kb_menu = None;
+            return;
+        }
+        let focus = std::mem::take(&mut self.kb_menu_focus);
+        let mut chosen = None;
+        let r = egui::Area::new(Id::new("kb-menu"))
+            .fixed_pos(pos)
+            .order(egui::Order::Foreground)
+            .show(ui.ctx(), |ui| {
+                w::menu_frame(ui, p, |ui| {
+                    chosen = self.menu(ui, p, id, focus);
+                });
+            });
+        if let Some(a) = chosen {
+            self.kb_menu = None;
+            self.run_menu(id, a);
+        } else if r.response.clicked_elsewhere() {
+            self.kb_menu = None;
+        }
+    }
+
+    /// `?`: every keyboard shortcut in one place.
+    pub(super) fn keys_window(&mut self, ui: &mut Ui, p: &Palette) {
+        let mut open = self.show_keys;
+        egui::Window::new("Keyboard shortcuts")
+            .open(&mut open)
+            .collapsible(false)
+            .resizable(false)
+            .anchor(Align2::CENTER_CENTER, vec2(0.0, 0.0))
+            .show(ui.ctx(), |ui| {
+                let groups: [(&str, &[(&str, &str)]); 4] = [
+                    (
+                        "Move",
+                        &[
+                            ("h j k l / arrows", "select the next block"),
+                            ("Enter", "zoom in (or scan into another filesystem)"),
+                            ("Backspace, Alt+Up", "up one folder"),
+                            ("Alt+Left, mouse back", "back"),
+                            ("+ / -", "more or less detail"),
+                        ],
+                    ),
+                    (
+                        "Act on the selected block",
+                        &[
+                            ("Shift+F10", "open its menu"),
+                            ("Ctrl+1…4, Ctrl+0", "tag red/yellow/green/blue, untag"),
+                            ("y", "copy its path"),
+                            ("Ctrl+O, Ctrl+T", "open it, terminal there"),
+                            ("Delete", "move to Trash (asks first)"),
+                        ],
+                    ),
+                    (
+                        "Scan and views",
+                        &[
+                            ("F5, Ctrl+R", "rescan this folder, rescan everything"),
+                            ("p", "pause or resume the scan"),
+                            ("/", "filter"),
+                            (
+                                "Ctrl+N, Ctrl+W, Ctrl+Tab",
+                                "new view, close view, next view",
+                            ),
+                        ],
+                    ),
+                    (
+                        "Panels",
+                        &[
+                            ("Ctrl+E (then Ctrl+S)", "export report (save it)"),
+                            ("Ctrl+,", "settings"),
+                            ("Ctrl+Shift+T", "light or dark theme"),
+                            ("?, Esc, Ctrl+Q", "this list, close what's open, quit"),
+                        ],
+                    ),
+                ];
+                // One grid for every group, so the columns line up.
+                egui::Grid::new("keys")
+                    .num_columns(2)
+                    .spacing(vec2(sp(6), sp(2)))
+                    .show(ui, |ui| {
+                        for (title, rows) in groups {
+                            ui.label(
+                                egui::RichText::new(title)
+                                    .font(fonts::font(ty::MD))
+                                    .color(p.text),
+                            );
+                            ui.end_row();
+                            for (k, v) in rows {
+                                ui.label(
+                                    egui::RichText::new(*k)
+                                        .font(fonts::mono(ty::SM))
+                                        .color(p.accent),
+                                );
+                                ui.label(egui::RichText::new(*v).color(p.text));
+                                ui.end_row();
+                            }
+                        }
+                    });
+            });
+        self.show_keys = open;
+    }
+
     /// Overflow menu for the compact toolbar. Returns true for "Open location".
     pub(super) fn more_menu(&mut self, ui: &mut Ui, p: &Palette) -> bool {
         let mut open_picker = false;

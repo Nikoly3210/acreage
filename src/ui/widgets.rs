@@ -580,9 +580,20 @@ fn chip(ui: &mut Ui, p: &Palette, text: &str, color: Color32) {
 
 #[derive(Clone, Copy, Debug)]
 pub enum ScanStatus {
-    Scanning { dirs: u64, bytes: u64 },
-    Paused { dirs: u64, bytes: u64 },
-    Done { secs: f32, errors: u32 },
+    /// `of`: bytes expected (used space of the filesystem) when scanning a whole mount.
+    Scanning {
+        dirs: u64,
+        bytes: u64,
+        of: Option<u64>,
+    },
+    Paused {
+        dirs: u64,
+        bytes: u64,
+    },
+    Done {
+        secs: f32,
+        errors: u32,
+    },
 }
 
 pub struct StatusInfo<'a> {
@@ -612,14 +623,22 @@ pub fn status_bar(ui: &mut Ui, p: &Palette, s: &StatusInfo) -> bool {
             ui.set_width(width - 2.0 * sp(4));
             ui.horizontal_centered(|ui| {
                 match s.scan {
-                    ScanStatus::Scanning { dirs, bytes } => {
+                    ScanStatus::Scanning { dirs, bytes, of } => {
                         ui.add(egui::Spinner::new().size(12.0).color(p.accent));
+                        let amount = match of {
+                            // Capped below 100% until the scan says it's done.
+                            Some(total) if total > 0 => {
+                                let pct = (bytes as f64 * 100.0 / total as f64).min(99.0);
+                                format!(
+                                    "{} of {} ({pct:.0}%)",
+                                    human_size(bytes),
+                                    human_size(total)
+                                )
+                            }
+                            _ => human_size(bytes),
+                        };
                         ui.label(rt(
-                            format!(
-                                "Scanning · {} folders · {}",
-                                group_digits(dirs),
-                                human_size(bytes)
-                            ),
+                            format!("Scanning · {} folders · {amount}", group_digits(dirs)),
                             p.text,
                         ));
                     }

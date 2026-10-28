@@ -67,7 +67,7 @@ fn headless(root: PathBuf, cli: &Cli, cfg: &Config) -> ! {
         ScanOpts {
             one_fs: cfg.one_filesystem,
         },
-        Arc::new(MountTable::read()),
+        Arc::new(MountTable::read().for_scan(&root)),
         Arc::new(|| {}),
     );
     let mut tree = Tree::new(root.as_os_str().as_bytes());
