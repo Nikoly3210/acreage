@@ -1,0 +1,24 @@
+pkgbase = acreage-git
+	pkgdesc = Live, labelled treemap of disk usage for Linux
+	pkgver = 0.1.0.r0.g378c1d2
+	pkgrel = 1
+	url = https://github.com/Nikoly3210/acreage
+	arch = x86_64
+	arch = aarch64
+	license = GPL-3.0-or-later
+	makedepends = cargo
+	makedepends = git
+	depends = gcc-libs
+	depends = glibc
+	depends = libxkbcommon
+	depends = libxkbcommon-x11
+	depends = fontconfig
+	depends = hicolor-icon-theme
+	optdepends = xdg-utils: open files and folders
+	optdepends = libglvnd: OpenGL rendering
+	provides = acreage
+	conflicts = acreage
+	source = acreage::git+https://github.com/Nikoly3210/acreage.git
+	sha256sums = SKIP
+
+pkgname = acreage-git

@@ -1,6 +1,6 @@
-# Maintainer: Nikoly3210 <EMAIL>
+# Maintainer: Nikoly3210 <nikoly3210@gmail.com>
 pkgname=acreage-git
-pkgver=0.1.0.r0.g0000000
+pkgver=0.1.0.r0.g378c1d2
 pkgrel=1
 pkgdesc="Live, labelled treemap of disk usage for Linux"
 arch=('x86_64' 'aarch64')

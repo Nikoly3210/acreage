@@ -1,4 +1,4 @@
-# Maintainer: Nikoly3210 <EMAIL>
+# Maintainer: Nikoly3210 <nikoly3210@gmail.com>
 pkgname=acreage
 pkgver=0.1.0
 pkgrel=1
@@ -11,7 +11,7 @@ optdepends=('xdg-utils: open files and folders'
             'libglvnd: OpenGL rendering')
 makedepends=('cargo')
 source=("$pkgname-$pkgver.tar.gz::https://github.com/Nikoly3210/acreage/archive/refs/tags/v$pkgver.tar.gz")
-sha256sums=('SKIP')  # replace with `updpkgsums` once the v0.1.0 tag exists
+sha256sums=('15634a2fd094ab325c6a94ce92daec5a7ea8caa495e7f21560957184a383b01c')
 
 prepare() {
   cd "$pkgname-$pkgver"
