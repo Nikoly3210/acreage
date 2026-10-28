@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Draft. Before submitting: replace Nikoly3210 with the code host account (or switch the id
-     to the domain, e.g. app.getacreage.Acreage), add screenshot URLs and a release. -->
+<!-- Draft. Before submitting: add screenshot URLs. -->
 <component type="desktop-application">
   <id>io.github.nikoly3210.Acreage</id>
   <name>Acreage</name>
@@ -37,6 +36,14 @@
     <keyword>storage</keyword>
     <keyword>du</keyword>
   </keywords>
+  <releases>
+    <release version="0.1.0" date="2026-10-28">
+      <url type="details">https://github.com/Nikoly3210/acreage/releases/tag/v0.1.0</url>
+      <description>
+        <p>First release.</p>
+      </description>
+    </release>
+  </releases>
   <content_rating type="oars-1.1"/>
   <supports>
     <control>keyboard</control>

@@ -1,0 +1,30 @@
+name: Release
+on:
+  push:
+    tags: ['v*']
+permissions:
+  contents: write
+jobs:
+  release:
+    # The oldest supported runner, so the binary runs on glibc 2.35 and newer.
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: System libraries for egui/winit
+        run: sudo apt-get update && sudo apt-get install -y libxkbcommon-dev libgl1-mesa-dev libx11-dev libxcursor-dev libxrandr-dev libxi-dev libfontconfig1-dev
+      - run: cargo build --release --locked
+      - name: Package
+        run: |
+          v=${GITHUB_REF_NAME#v}
+          d=acreage-$v-x86_64-linux
+          mkdir -p "$d/icons"
+          cp target/release/acreage packaging/acreage.desktop assets/acreage.svg README.md CHANGELOG.md LICENSE "$d/"
+          cp -r assets/icons/. "$d/icons/"
+          tar czf "$d.tar.gz" "$d"
+          sha256sum "$d.tar.gz" > "$d.tar.gz.sha256"
+      - name: Release notes from CHANGELOG.md
+        # The section for this version, without its heading.
+        run: awk -v v="${GITHUB_REF_NAME#v}" '/^## /{p = index($0, "## " v " ") == 1; next} p' CHANGELOG.md > notes.md
+      - run: gh release create "$GITHUB_REF_NAME" --title "Acreage ${GITHUB_REF_NAME#v}" --notes-file notes.md acreage-*.tar.gz acreage-*.tar.gz.sha256
+        env:
+          GH_TOKEN: ${{ github.token }}
