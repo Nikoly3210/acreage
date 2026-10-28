@@ -1,10 +1,10 @@
-# Maintainer: OWNER <EMAIL>
+# Maintainer: Nikoly3210 <EMAIL>
 pkgname=acreage-git
 pkgver=0.1.0.r0.g0000000
 pkgrel=1
 pkgdesc="Live, labelled treemap of disk usage for Linux"
 arch=('x86_64' 'aarch64')
-url="REPO_URL"
+url="https://github.com/Nikoly3210/acreage"
 license=('GPL-3.0-or-later')
 depends=('gcc-libs' 'glibc' 'libxkbcommon' 'fontconfig' 'hicolor-icon-theme')
 optdepends=('xdg-utils: open files and folders'
@@ -12,7 +12,7 @@ optdepends=('xdg-utils: open files and folders'
 makedepends=('cargo' 'git')
 provides=('acreage')
 conflicts=('acreage')
-source=("acreage::git+REPO_URL.git")
+source=("acreage::git+https://github.com/Nikoly3210/acreage.git")
 sha256sums=("SKIP")
 
 pkgver() {

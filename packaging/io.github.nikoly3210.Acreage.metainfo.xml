@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Draft. Before submitting: replace OWNER with the code host account (or switch the id
+<!-- Draft. Before submitting: replace Nikoly3210 with the code host account (or switch the id
      to the domain, e.g. app.getacreage.Acreage), add screenshot URLs and a release. -->
 <component type="desktop-application">
-  <id>io.github.OWNER.Acreage</id>
+  <id>io.github.nikoly3210.Acreage</id>
   <name>Acreage</name>
   <summary>See what's taking up your disk</summary>
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>GPL-3.0-or-later</project_license>
-  <developer id="io.github.OWNER">
-    <name>OWNER</name>
+  <developer id="io.github.nikoly3210">
+    <name>Nikoly3210</name>
   </developer>
   <description>
     <p>Acreage shows your disk as a map: every folder and file is a block, labelled and sized by the space it takes. It fills in while it scans and keeps up when files change, so you can watch a download grow or see a cleanup land.</p>
@@ -22,6 +22,9 @@
     </ul>
     <p>No account and no telemetry: nothing leaves your machine.</p>
   </description>
+  <url type="homepage">https://nikoly3210.github.io/acreage</url>
+  <url type="bugtracker">https://github.com/Nikoly3210/acreage/issues</url>
+  <url type="vcs-browser">https://github.com/Nikoly3210/acreage</url>
   <launchable type="desktop-id">acreage.desktop</launchable>
   <categories>
     <category>Utility</category>

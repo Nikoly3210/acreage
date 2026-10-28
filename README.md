@@ -16,7 +16,7 @@ See what's taking up your disk. A live map of every folder and file, labelled an
 - From source (recent stable Rust; developed with 1.99):
 
 ```
-git clone REPO_URL acreage
+git clone https://github.com/Nikoly3210/acreage acreage
 cd acreage
 cargo build --release
 ./target/release/acreage ~
@@ -42,7 +42,7 @@ No account, no telemetry, no network requests. Nothing leaves your machine.
 
 ## Problems
 
-Open an issue at REPO_URL/issues with your distro, display server (X11/Wayland) and the output of `acreage --version`.
+Open an issue at https://github.com/Nikoly3210/acreage/issues with your distro, display server (X11/Wayland) and the output of `acreage --version`.
 
 ## Development
 

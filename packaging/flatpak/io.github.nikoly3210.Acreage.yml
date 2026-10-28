@@ -3,7 +3,7 @@
 #   python3 flatpak-cargo-generator.py ../../Cargo.lock -o cargo-sources.json
 # (https://github.com/flatpak/flatpak-builder-tools/tree/master/cargo), point the
 # source at the v0.1.0 tag + commit, then follow https://docs.flathub.org/docs/for-app-authors/submission
-app-id: io.github.OWNER.Acreage
+app-id: io.github.nikoly3210.Acreage
 runtime: org.freedesktop.Platform
 runtime-version: "24.08"
 sdk: org.freedesktop.Sdk
@@ -30,12 +30,12 @@ modules:
       - cargo --offline fetch --manifest-path Cargo.toml --verbose
       - cargo --offline build --release --verbose
       - install -Dm755 target/release/acreage /app/bin/acreage
-      - install -Dm644 packaging/acreage.desktop /app/share/applications/io.github.OWNER.Acreage.desktop
-      - sed -i 's/^Icon=acreage$/Icon=io.github.OWNER.Acreage/' /app/share/applications/io.github.OWNER.Acreage.desktop
-      - install -Dm644 assets/acreage.svg /app/share/icons/hicolor/scalable/apps/io.github.OWNER.Acreage.svg
-      - install -Dm644 packaging/io.github.OWNER.Acreage.metainfo.xml /app/share/metainfo/io.github.OWNER.Acreage.metainfo.xml
+      - install -Dm644 packaging/acreage.desktop /app/share/applications/io.github.nikoly3210.Acreage.desktop
+      - sed -i 's/^Icon=acreage$/Icon=io.github.nikoly3210.Acreage/' /app/share/applications/io.github.nikoly3210.Acreage.desktop
+      - install -Dm644 assets/acreage.svg /app/share/icons/hicolor/scalable/apps/io.github.nikoly3210.Acreage.svg
+      - install -Dm644 packaging/io.github.nikoly3210.Acreage.metainfo.xml /app/share/metainfo/io.github.nikoly3210.Acreage.metainfo.xml
     sources:
       - type: git
-        url: REPO_URL.git
+        url: https://github.com/Nikoly3210/acreage.git
         tag: v0.1.0
       - cargo-sources.json

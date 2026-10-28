@@ -1,16 +1,16 @@
-# Maintainer: OWNER <EMAIL>
+# Maintainer: Nikoly3210 <EMAIL>
 pkgname=acreage
 pkgver=0.1.0
 pkgrel=1
 pkgdesc="Live, labelled treemap of disk usage for Linux"
 arch=('x86_64' 'aarch64')
-url="REPO_URL"
+url="https://github.com/Nikoly3210/acreage"
 license=('GPL-3.0-or-later')
 depends=('gcc-libs' 'glibc' 'libxkbcommon' 'fontconfig' 'hicolor-icon-theme')
 optdepends=('xdg-utils: open files and folders'
             'libglvnd: OpenGL rendering')
 makedepends=('cargo')
-source=("$pkgname-$pkgver.tar.gz::REPO_URL/archive/refs/tags/v$pkgver.tar.gz")
+source=("$pkgname-$pkgver.tar.gz::https://github.com/Nikoly3210/acreage/archive/refs/tags/v$pkgver.tar.gz")
 sha256sums=('SKIP')  # replace with `updpkgsums` once the v0.1.0 tag exists
 
 prepare() {
