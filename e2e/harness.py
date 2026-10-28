@@ -263,5 +263,8 @@ def apparent_total(root: Path):
     return total
 
 
-def trash_dir():
-    return Path(f"/tmp/.Trash-{os.getuid()}/files")
+def trashed(app):
+    """Names in the trash the app used: /tmp's own when /tmp is a separate filesystem
+    (tmpfs), else the private home's, as the freedesktop spec says."""
+    dirs = [Path(f"/tmp/.Trash-{os.getuid()}/files"), app.home / ".local/share/Trash/files"]
+    return [p.name for d in dirs if d.is_dir() for p in d.iterdir()]

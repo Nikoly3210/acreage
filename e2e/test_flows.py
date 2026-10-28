@@ -9,7 +9,7 @@ import time
 import unittest
 from pathlib import Path
 
-from harness import AcreageCase, apparent_total, display, trash_dir, write
+from harness import AcreageCase, apparent_total, display, trashed, write
 
 MB = 1 << 20
 
@@ -281,7 +281,7 @@ class F03TagAndTrash(AcreageCase):
         app.key("Return")
         s = app.wait(lambda s: not s["confirm_open"], what="trash finished")
         self.assertFalse(target.exists())
-        self.assertTrue(any(p.name.startswith("arch") for p in trash_dir().iterdir()))
+        self.assertTrue(any(n.startswith("arch") for n in trashed(app)))
         self.assertEqual(s["total_size"], before - 60 * MB)
         self.assertTrue(any("Moved 1 item" in t for t in s["toasts"]), s["toasts"])
 
