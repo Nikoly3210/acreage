@@ -1,0 +1,44 @@
+# Maintainer: Nikoly3210 <nikoly3210@gmail.com>
+pkgname=acreage
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="Live, labelled treemap of disk usage for Linux"
+arch=('x86_64' 'aarch64')
+url="https://github.com/Nikoly3210/acreage"
+license=('GPL-3.0-or-later')
+depends=('gcc-libs' 'glibc' 'libxkbcommon' 'libxkbcommon-x11' 'fontconfig' 'hicolor-icon-theme')
+optdepends=('xdg-utils: open files and folders'
+            'libglvnd: OpenGL rendering')
+makedepends=('cargo')
+source=("$pkgname-$pkgver.tar.gz::https://github.com/Nikoly3210/acreage/archive/refs/tags/v$pkgver.tar.gz")
+sha256sums=('15634a2fd094ab325c6a94ce92daec5a7ea8caa495e7f21560957184a383b01c')
+
+prepare() {
+  cd "$pkgname-$pkgver"
+  export RUSTUP_TOOLCHAIN=stable
+  cargo fetch --locked --target "$(rustc -vV | sed -n 's/host: //p')"
+}
+
+build() {
+  cd "$pkgname-$pkgver"
+  export RUSTUP_TOOLCHAIN=stable
+  export CARGO_TARGET_DIR=target
+  cargo build --frozen --release
+}
+
+check() {
+  cd "$pkgname-$pkgver"
+  export RUSTUP_TOOLCHAIN=stable
+  cargo test --frozen --lib
+}
+
+package() {
+  cd "$pkgname-$pkgver"
+  install -Dm755 target/release/acreage "$pkgdir/usr/bin/acreage"
+  install -Dm644 packaging/acreage.desktop "$pkgdir/usr/share/applications/acreage.desktop"
+  for s in 16 22 24 32 48 64 128 256 512; do
+    install -Dm644 "assets/icons/${s}x${s}/acreage.png" "$pkgdir/usr/share/icons/hicolor/${s}x${s}/apps/acreage.png"
+  done
+  install -Dm644 README.md "$pkgdir/usr/share/doc/$pkgname/README.md"
+  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}
