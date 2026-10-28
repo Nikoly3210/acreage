@@ -18,6 +18,6 @@ jobs:
     needs: test
     steps:
       - uses: actions/checkout@v4
-      - run: sudo apt-get update && sudo apt-get install -y libxkbcommon-dev libgl1-mesa-dev libgl1-mesa-dri libx11-dev libxcursor-dev libxrandr-dev libxi-dev libfontconfig1-dev xvfb x11-utils xdotool xclip imagemagick fonts-noto-core fonts-dejavu-core
+      - run: sudo apt-get update && sudo apt-get install -y libxkbcommon-dev libxkbcommon-x11-0 libgl1-mesa-dev libgl1-mesa-dri libx11-dev libxcursor-dev libxrandr-dev libxi-dev libfontconfig1-dev xvfb x11-utils xdotool xclip imagemagick fonts-noto-core fonts-dejavu-core
       - run: cargo build --release --locked
       - run: python3 -m unittest discover -s e2e -v

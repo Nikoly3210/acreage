@@ -6,7 +6,7 @@ pkgdesc="Live, labelled treemap of disk usage for Linux"
 arch=('x86_64' 'aarch64')
 url="https://github.com/Nikoly3210/acreage"
 license=('GPL-3.0-or-later')
-depends=('gcc-libs' 'glibc' 'libxkbcommon' 'fontconfig' 'hicolor-icon-theme')
+depends=('gcc-libs' 'glibc' 'libxkbcommon' 'libxkbcommon-x11' 'fontconfig' 'hicolor-icon-theme')
 optdepends=('xdg-utils: open files and folders'
             'libglvnd: OpenGL rendering')
 makedepends=('cargo' 'git')
