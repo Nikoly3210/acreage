@@ -1,0 +1,41 @@
+# DRAFT Flathub manifest. Not built locally (flatpak-builder isn't installed here).
+# Before submitting: generate cargo-sources.json with flatpak-cargo-generator
+#   python3 flatpak-cargo-generator.py ../../Cargo.lock -o cargo-sources.json
+# (https://github.com/flatpak/flatpak-builder-tools/tree/master/cargo), point the
+# source at the v0.1.0 tag + commit, then follow https://docs.flathub.org/docs/for-app-authors/submission
+app-id: io.github.OWNER.Acreage
+runtime: org.freedesktop.Platform
+runtime-version: "24.08"
+sdk: org.freedesktop.Sdk
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.rust-stable
+command: acreage
+finish-args:
+  - --share=ipc
+  - --socket=fallback-x11
+  - --socket=wayland
+  - --device=dri
+  # A disk usage tool has to read the disk. Read-only for everything but Trash and settings.
+  - --filesystem=host:ro
+  - --filesystem=xdg-data/Trash
+  - --talk-name=org.freedesktop.FileManager1
+build-options:
+  append-path: /usr/lib/sdk/rust-stable/bin
+  env:
+    CARGO_HOME: /run/build/acreage/cargo
+modules:
+  - name: acreage
+    buildsystem: simple
+    build-commands:
+      - cargo --offline fetch --manifest-path Cargo.toml --verbose
+      - cargo --offline build --release --verbose
+      - install -Dm755 target/release/acreage /app/bin/acreage
+      - install -Dm644 packaging/acreage.desktop /app/share/applications/io.github.OWNER.Acreage.desktop
+      - sed -i 's/^Icon=acreage$/Icon=io.github.OWNER.Acreage/' /app/share/applications/io.github.OWNER.Acreage.desktop
+      - install -Dm644 assets/acreage.svg /app/share/icons/hicolor/scalable/apps/io.github.OWNER.Acreage.svg
+      - install -Dm644 packaging/io.github.OWNER.Acreage.metainfo.xml /app/share/metainfo/io.github.OWNER.Acreage.metainfo.xml
+    sources:
+      - type: git
+        url: REPO_URL.git
+        tag: v0.1.0
+      - cargo-sources.json
