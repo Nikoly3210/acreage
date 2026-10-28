@@ -9,6 +9,7 @@ use crate::scan::ScanOpts;
 use crate::scan::mounts::MountTable;
 use crate::screens::browse::{Browse, BrowseOut};
 use crate::screens::picker::Picker;
+use crate::testhook::{Hook, Obj};
 use crate::ui::style;
 use crate::view::SizeMode;
 
@@ -24,6 +25,7 @@ pub struct App {
     mode: SizeMode,
     initial_filter: Option<String>,
     screen: Screen,
+    hook: Hook,
 }
 
 impl App {
@@ -43,6 +45,7 @@ impl App {
             mode,
             initial_filter: filter,
             screen: Screen::Picker(Picker::new(&mounts)),
+            hook: Hook::from_env(),
         };
         if let Some(p) = path {
             app.open(ctx, p);
@@ -102,6 +105,18 @@ impl eframe::App for App {
                     self.picker(&ctx);
                 }
             }
+        }
+        if self.hook.enabled() {
+            let state = match &self.screen {
+                Screen::Picker(picker) => Obj::default()
+                    .str("screen", "picker")
+                    .opt("error", picker.error.as_deref())
+                    .finish(),
+                Screen::Browse(b) => b
+                    .test_state(Obj::default().str("screen", "browse"))
+                    .finish(),
+            };
+            self.hook.write(state);
         }
     }
 }

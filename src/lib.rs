@@ -10,5 +10,6 @@ pub mod layout;
 pub mod model;
 pub mod scan;
 pub mod screens;
+pub mod testhook;
 pub mod ui;
 pub mod view;

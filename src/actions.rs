@@ -12,7 +12,9 @@ use crate::model::NodeId;
 
 #[derive(Debug)]
 pub enum ActionResult {
+    /// `scan` is the scan generation the ids belong to; a rescan since then makes them stale.
     Trashed {
+        scan: u64,
         ok: Vec<NodeId>,
         failed: Vec<(PathBuf, String)>,
     },
@@ -89,6 +91,7 @@ pub fn terminal_here(path: &Path) -> io::Result<()> {
 
 /// Move items to the freedesktop Trash on a thread. Already-gone paths count as success.
 pub fn trash(
+    scan: u64,
     items: Vec<(NodeId, PathBuf)>,
     tx: Sender<ActionResult>,
     wake: impl Fn() + Send + 'static,
@@ -106,7 +109,7 @@ pub fn trash(
                 Err(e) => failed.push((path, e.to_string())),
             }
         }
-        tx.send(ActionResult::Trashed { ok, failed }).ok();
+        tx.send(ActionResult::Trashed { scan, ok, failed }).ok();
         wake();
     });
 }

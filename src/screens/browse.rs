@@ -91,6 +91,8 @@ pub struct Browse {
     anim: Option<ZoomAnim>,
     toasts: Vec<Toast>,
     act_tx: Sender<ActionResult>,
+    /// Bumped by every (re)scan. Node ids from an older scan must never touch the new tree.
+    scan_gen: u64,
     act_rx: Receiver<ActionResult>,
     ctx: egui::Context,
 }
@@ -178,6 +180,7 @@ impl Browse {
             anim: None,
             toasts: vec![],
             act_tx,
+            scan_gen: 0,
             act_rx,
             ctx: ctx.clone(),
         };
@@ -192,6 +195,12 @@ impl Browse {
     fn start_scan(&mut self) {
         let ctx = self.ctx.clone();
         let wake: Arc<dyn Fn() + Send + Sync> = Arc::new(move || ctx.request_repaint());
+        self.scan_gen += 1;
+        // Anything holding node ids of the old tree goes: the confirm panel, the menu target.
+        self.confirm = None;
+        self.menu_target = None;
+        self.hovered = None;
+        self.anim = None;
         self.tree = Tree::new(self.root_path.as_os_str().as_bytes());
         let filter = (self.view.filter_src.clone(), self.view.filter.take());
         self.view = View::new(0);
@@ -252,7 +261,21 @@ impl Browse {
     fn handle_actions(&mut self) {
         while let Ok(r) = self.act_rx.try_recv() {
             match r {
-                ActionResult::Trashed { ok, failed } => {
+                ActionResult::Trashed { scan, ok, failed } if scan != self.scan_gen => {
+                    // Finished after a rescan: the ids are stale, the new scan already shows the truth.
+                    let n = ok.len();
+                    if n > 0 {
+                        let s = if n == 1 { "" } else { "s" };
+                        self.toast(ToastKind::Success, format!("Moved {n} item{s} to Trash"));
+                    }
+                    if let Some((path, err)) = failed.first() {
+                        self.toast(
+                            ToastKind::Error,
+                            format!("Couldn't move {} to Trash: {err}", path.display()),
+                        );
+                    }
+                }
+                ActionResult::Trashed { ok, failed, .. } => {
                     let freed: u64 = ok
                         .iter()
                         .filter(|id| self.tree.exists(**id))
@@ -384,7 +407,9 @@ impl Browse {
             .map(|id| (*id, self.tree.path(*id)))
             .collect();
         let ctx = self.ctx.clone();
-        actions::trash(items, self.act_tx.clone(), move || ctx.request_repaint());
+        actions::trash(self.scan_gen, items, self.act_tx.clone(), move || {
+            ctx.request_repaint()
+        });
     }
 
     fn run_menu(&mut self, id: NodeId, a: MenuAction) {
@@ -474,6 +499,17 @@ impl Browse {
                 self.view.selected = None;
             }
         }
+        // Alt combos first: egui's consume_key ignores extra Alt, so the plain arrow
+        // handlers below would otherwise swallow Alt+Left / Alt+Up.
+        if ui.input_mut(|i| i.consume_key(Modifiers::ALT, Key::ArrowUp)) || pressed(Key::Backspace)
+        {
+            self.zoom_out(false);
+        }
+        if ui.input(|i| i.pointer.button_pressed(PointerButton::Extra1))
+            || ui.input_mut(|i| i.consume_key(Modifiers::ALT, Key::ArrowLeft))
+        {
+            self.zoom_out(true);
+        }
         let moves = [
             (Key::ArrowLeft, Dir4::Left),
             (Key::H, Dir4::Left),
@@ -498,15 +534,6 @@ impl Browse {
             && let Some(s) = self.view.selected
         {
             self.zoom_in(s);
-        }
-        if pressed(Key::Backspace) || ui.input_mut(|i| i.consume_key(Modifiers::ALT, Key::ArrowUp))
-        {
-            self.zoom_out(false);
-        }
-        if ui.input(|i| i.pointer.button_pressed(PointerButton::Extra1))
-            || ui.input_mut(|i| i.consume_key(Modifiers::ALT, Key::ArrowLeft))
-        {
-            self.zoom_out(true);
         }
         if pressed(Key::P)
             && let Some(s) = &self.scanner
@@ -1073,6 +1100,90 @@ impl Browse {
                 }
             },
         );
+    }
+
+    /// Everything the e2e suite asserts on (see `testhook`).
+    pub fn test_state(&self, o: crate::testhook::Obj) -> crate::testhook::Obj {
+        let path = |id: NodeId| self.tree.path(id).to_string_lossy().into_owned();
+        let scan = match self.state {
+            ScanState::Scanning if self.paused() => "paused",
+            ScanState::Scanning => "scanning",
+            ScanState::Done {
+                cancelled: true, ..
+            } => "cancelled",
+            ScanState::Done { .. } => "done",
+        };
+        let mut tags: Vec<String> = self
+            .tags
+            .iter()
+            .filter(|(id, _)| self.tree.exists(**id))
+            .map(|(id, t)| format!("{}={:?}", path(*id), t))
+            .collect();
+        tags.sort();
+        let confirm: Vec<String> = self
+            .confirm
+            .as_ref()
+            .map(|c| c.items.iter().map(|id| path(*id)).collect())
+            .unwrap_or_default();
+        let toasts: Vec<String> = self.toasts.iter().map(|t| t.text.clone()).collect();
+        // Screen rects of the top two levels, so tests can click a specific block.
+        let rects: Vec<String> = self
+            .view
+            .laid
+            .iter()
+            .filter(|l| l.depth <= 2)
+            .filter_map(|l| match l.item {
+                Item::Node(id) => Some(format!(
+                    "{}|{}|{}|{}|{}",
+                    path(id),
+                    l.rect.x,
+                    l.rect.y,
+                    l.rect.w,
+                    l.rect.h
+                )),
+                Item::Agg { .. } => None,
+            })
+            .collect();
+        o.list("rects", &rects)
+            .str("scan", scan)
+            .str("root", &self.root_path.to_string_lossy())
+            .str("zoom", &path(self.view.zoom))
+            .opt(
+                "selected",
+                self.view
+                    .selected
+                    .filter(|s| self.tree.exists(*s))
+                    .map(path)
+                    .as_deref(),
+            )
+            .opt("hovered", self.hovered_node().map(path).as_deref())
+            .str("filter_text", &self.filter_bar.text)
+            .str("filter_applied", &self.view.filter_src)
+            .opt("filter_error", self.filter_bar.error.as_deref())
+            .num(
+                "zoom_size",
+                self.view.size(&self.tree, self.view.zoom, self.mode),
+            )
+            .num(
+                "total_size",
+                crate::view::node_size(&self.tree, self.tree.root, self.mode),
+            )
+            .num("items", self.tree.get(self.tree.root).items)
+            .num("blocks", self.view.laid.len() as u64)
+            .num("history", self.view.history.len() as u64)
+            .num("errors", self.errors.len() as u64)
+            .list("tags", &tags)
+            .bool("confirm_open", self.confirm.is_some())
+            .bool(
+                "confirm_working",
+                self.confirm.as_ref().is_some_and(|c| c.working),
+            )
+            .list("confirm_items", &confirm)
+            .list("toasts", &toasts)
+            .bool("errors_panel", self.show_errors)
+            .bool("help", self.show_help)
+            .bool("more_menu", self.show_more)
+            .bool("animating", self.anim.is_some())
     }
 
     /// Overflow menu for the compact toolbar. Returns true for "Open location".

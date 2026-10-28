@@ -379,6 +379,19 @@ mod tests {
     }
 
     #[test]
+    fn unicode_long_and_messy_input() {
+        assert!(m("🎵", "Música 🎵.flac", 1, 0, None));
+        assert!(m("*canción*", "Canción.mp3", 1, 0, None));
+        let long: String = (0..300).map(|i| format!("*.e{i};")).collect();
+        let f = parse(&long).unwrap().unwrap();
+        assert_eq!(f.terms, 300);
+        assert!(m("  *.iso ;  >1mb ; ", "a.iso", 2 * MB, 0, None));
+        assert!(m(">=1mb", "x", 2 * MB, 0, None));
+        assert!(parse(">").is_err());
+        assert!(parse(">abc").is_err());
+    }
+
+    #[test]
     fn errors_point_at_the_term() {
         let e = parse("*.iso;>1gbb").unwrap_err();
         assert_eq!(e.col, 7);
