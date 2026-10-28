@@ -5,9 +5,9 @@ use std::os::unix::ffi::OsStrExt;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-use canopy::model::Tree;
-use canopy::scan::mounts::MountTable;
-use canopy::scan::{ScanEvent, ScanOpts, Scanner};
+use acreage::model::Tree;
+use acreage::scan::mounts::MountTable;
+use acreage::scan::{ScanEvent, ScanOpts, Scanner};
 
 fn main() {
     let root = std::path::PathBuf::from(std::env::args().nth(1).unwrap_or_else(|| "/usr".into()))

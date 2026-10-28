@@ -8,7 +8,7 @@ use egui::{FontData, FontDefinitions, FontFamily, FontId};
 
 use super::theme::TypeStep;
 
-const BOLD: &str = "canopy-bold";
+const BOLD: &str = "acreage-bold";
 
 fn fc_match(pattern: &str) -> Option<Vec<u8>> {
     let out = Command::new("fc-match")

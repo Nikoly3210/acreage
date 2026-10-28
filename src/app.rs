@@ -60,7 +60,7 @@ impl App {
 
     fn open(&mut self, ctx: &egui::Context, path: PathBuf) {
         ctx.send_viewport_cmd(ViewportCommand::Title(format!(
-            "canopy — {}",
+            "Acreage — {}",
             path.display()
         )));
         let b = Browse::new(
@@ -75,7 +75,7 @@ impl App {
     }
 
     fn picker(&mut self, ctx: &egui::Context) {
-        ctx.send_viewport_cmd(ViewportCommand::Title("canopy".into()));
+        ctx.send_viewport_cmd(ViewportCommand::Title("Acreage".into()));
         self.mounts = Arc::new(MountTable::read());
         self.screen = Screen::Picker(Picker::new(&self.mounts));
     }

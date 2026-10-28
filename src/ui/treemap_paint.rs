@@ -202,10 +202,11 @@ pub fn paint_block(
                     &font,
                     p.text_muted,
                     body.width() - 8.0,
-                )
-                    && body.height() > g.size().y + 8.0 && g.size().x > 40.0 {
-                        painter.galley(body.center() - g.size() / 2.0, g, p.text_muted);
-                    }
+                ) && body.height() > g.size().y + 8.0
+                    && g.size().x > 40.0
+                {
+                    painter.galley(body.center() - g.size() / 2.0, g, p.text_muted);
+                }
             }
         }
         _ => {}
@@ -240,10 +241,18 @@ pub fn paint_block(
         }
     }
     if st.hovered && !st.selected {
+        // Accent outline plus a thin contrast line inside it, so the hover shows on any fill
+        // (the accent is a green, like some file colours).
         painter.rect_stroke(
             rect,
             0,
             Stroke::new(L::HOVER_W, p.tm_hover),
+            StrokeKind::Inside,
+        );
+        painter.rect_stroke(
+            rect.shrink(L::HOVER_W),
+            0,
+            Stroke::new(1.0, p.tm_select_halo),
             StrokeKind::Inside,
         );
     }

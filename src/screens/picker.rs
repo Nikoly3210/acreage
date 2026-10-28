@@ -161,14 +161,14 @@ impl Picker {
                     ui.set_width(width);
                     ui.add_space(sp(7));
                     ui.label(
-                        egui::RichText::new("Choose a disk or folder")
+                        egui::RichText::new("Pick a disk or a folder")
                             .font(fonts::font(ty::XL))
                             .color(p.text),
                     );
                     ui.add_space(sp(2));
                     ui.label(
                         egui::RichText::new(
-                            "canopy maps what's using the space, live, while it scans.",
+                            "Acreage shows what's taking up the space, and keeps the picture current as files change.",
                         )
                         .color(p.text_muted),
                     );
@@ -177,7 +177,7 @@ impl Picker {
                     ui.horizontal(|ui| {
                         let te = egui::TextEdit::singleline(&mut self.path_text)
                             .font(fonts::mono(ty::SM))
-                            .hint_text("Type a folder path, e.g. ~/Downloads")
+                            .hint_text("…or type a path, like ~/Downloads")
                             .desired_width(width - 90.0);
                         let r = ui.add(te);
                         let go = Btn::new("Scan")
@@ -227,7 +227,7 @@ impl Picker {
                         ui,
                         p,
                         &mut self.show_system,
-                        "Show system mounts (proc, tmpfs, cgroup…)",
+                        "Also list system filesystems (proc, tmpfs, cgroup…)",
                     );
                 });
             });
@@ -240,7 +240,7 @@ impl Picker {
 pub fn resolve(text: &str) -> Result<PathBuf, String> {
     let t = text.trim();
     if t.is_empty() {
-        return Err("Type a folder path first.".into());
+        return Err("Type a path first, like ~/Downloads.".into());
     }
     let expanded = match t.strip_prefix('~') {
         Some(rest) => {

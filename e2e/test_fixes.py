@@ -1,8 +1,8 @@
 """e2e tests for the fixes from replica/fixes.md: btrfs subvolumes (#1), scanning into another
 filesystem (#2), keyboard completeness (#3) and robustness mid-scan (#6).
 
-Mount tables are faked with CANOPY_MOUNTINFO, so no root or real btrfs is needed.
-Mid-scan cases use CANOPY_TEST_PAUSE_AFTER to hold the scan open.
+Mount tables are faked with ACREAGE_MOUNTINFO, so no root or real btrfs is needed.
+Mid-scan cases use ACREAGE_TEST_PAUSE_AFTER to hold the scan open.
 """
 
 import os
@@ -10,17 +10,17 @@ import shutil
 import time
 from pathlib import Path
 
-from harness import CanopyCase, apparent_total, write
+from harness import AcreageCase, apparent_total, write
 from test_flows import MB
 
 
 def mountinfo(tmp: Path, lines):
     p = tmp / "mountinfo"
     p.write_text("\n".join(lines) + "\n")
-    return {"CANOPY_MOUNTINFO": str(p)}
+    return {"ACREAGE_MOUNTINFO": str(p)}
 
 
-class Fix1Btrfs(CanopyCase):
+class Fix1Btrfs(AcreageCase):
     def test_FX1_H1_same_fs_subvolumes_entered_duplicates_not(self):
         fx = self.tmp / "fx"
         write(fx / "top.bin", 1 * MB)
@@ -42,7 +42,7 @@ class Fix1Btrfs(CanopyCase):
         self.assertEqual(s["items"], 2)  # top.bin + home/a.bin
 
 
-class Fix2EnterMount(CanopyCase):
+class Fix2EnterMount(AcreageCase):
     def test_FX2_H1_scan_into_other_filesystem(self):
         fx = self.tmp / "fx"
         write(fx / "big.bin", 50 * MB)
@@ -84,7 +84,7 @@ class Fix2EnterMount(CanopyCase):
         self.assertFalse(any(k.startswith("run=") for k in app.state()["kinds"]))
 
 
-class Fix3Keyboard(CanopyCase):
+class Fix3Keyboard(AcreageCase):
     def setUp(self):
         super().setUp()
         self.fx = self.tmp / "fx"
@@ -118,7 +118,7 @@ class Fix3Keyboard(CanopyCase):
         app.wait(lambda s: s["detail"] == "coarse", what="less detail")
         app.key("plus", "plus")
         app.wait(lambda s: s["detail"] == "fine", what="more detail")
-        self.assertIn('detail = "fine"', (home / "canopy" / "config.toml").read_text())
+        self.assertIn('detail = "fine"', (home / "acreage" / "config.toml").read_text())
         app.key("question")
         app.wait(lambda s: s["keys_window"], what="shortcut list")
         app.shot("FX3-keys")
@@ -133,7 +133,7 @@ class Fix3Keyboard(CanopyCase):
         self.assertEqual(app.proc.returncode, 0)
 
 
-class Fix6MidScan(CanopyCase):
+class Fix6MidScan(AcreageCase):
     def setUp(self):
         super().setUp()
         self.fx = self.tmp / "fx"
@@ -142,7 +142,7 @@ class Fix6MidScan(CanopyCase):
                 write(self.fx / f"d{d:02}" / "sub" / f"f{f}.bin", (d + 1) * 100_000)
 
     def paused_app(self):
-        app = self.launch(self.fx, "--apparent-size", env={"CANOPY_TEST_PAUSE_AFTER": "2"})
+        app = self.launch(self.fx, "--apparent-size", env={"ACREAGE_TEST_PAUSE_AFTER": "2"})
         app.wait(lambda s: s.get("scan") == "paused", what="paused mid-scan")
         return app
 

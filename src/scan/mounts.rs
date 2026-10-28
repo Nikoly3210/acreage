@@ -148,8 +148,8 @@ pub struct MountTable {
 
 impl MountTable {
     pub fn read() -> MountTable {
-        // CANOPY_MOUNTINFO lets the e2e suite fake mounts without root.
-        let src = std::env::var_os("CANOPY_MOUNTINFO")
+        // ACREAGE_MOUNTINFO lets the e2e suite fake mounts without root.
+        let src = std::env::var_os("ACREAGE_MOUNTINFO")
             .map(PathBuf::from)
             .unwrap_or_else(|| "/proc/self/mountinfo".into());
         let text = std::fs::read_to_string(src).unwrap_or_default();

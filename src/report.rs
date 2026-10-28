@@ -204,7 +204,7 @@ pub fn render(
         Format::Text => {
             let _ = writeln!(
                 out,
-                "canopy report · {} · {} · {}",
+                "Acreage report · {} · {} · {}",
                 rows[0].path, h.when, h.size_label
             );
             if let Some(f) = h.filter {

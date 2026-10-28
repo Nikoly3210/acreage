@@ -1,4 +1,4 @@
-//! Things canopy does to the outside world: open with the default app, open a terminal,
+//! Things acreage does to the outside world: open with the default app, open a terminal,
 //! move to Trash. Long-running work happens on a thread and reports back on a channel.
 
 use std::io;

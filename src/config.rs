@@ -1,6 +1,6 @@
-//! Settings remembered between runs: `$XDG_CONFIG_HOME/canopy/config.toml`
-//! (default `~/.config/canopy/config.toml`). Human-editable; unknown keys are ignored and
-//! missing ones take defaults, so an old file never stops canopy from starting.
+//! Settings remembered between runs: `$XDG_CONFIG_HOME/acreage/config.toml`
+//! (default `~/.config/acreage/config.toml`). Human-editable; unknown keys are ignored and
+//! missing ones take defaults, so an old file never stops acreage from starting.
 
 use std::io;
 use std::path::PathBuf;
@@ -73,14 +73,28 @@ pub fn path() -> PathBuf {
         .unwrap_or_else(|| {
             PathBuf::from(std::env::var_os("HOME").unwrap_or_default()).join(".config")
         });
-    base.join("canopy").join("config.toml")
+    base.join("acreage").join("config.toml")
+}
+
+/// Where settings lived under the app's working name, before it was named. Read once if
+/// the new file doesn't exist yet, then saved at the new path on the next change.
+fn legacy_path() -> PathBuf {
+    path()
+        .parent()
+        .and_then(|d| d.parent())
+        .map(|b| b.join("canopy").join("config.toml"))
+        .unwrap_or_default()
 }
 
 impl Config {
     /// Load the config. A missing file gives defaults; a broken one gives defaults plus the
     /// error text so the UI can say so (the broken file is left alone until the next save).
     pub fn load() -> (Config, Option<String>) {
-        let p = path();
+        let p = if !path().exists() && legacy_path().exists() {
+            legacy_path()
+        } else {
+            path()
+        };
         match std::fs::read_to_string(&p) {
             Ok(text) => match toml::from_str(&text) {
                 Ok(c) => (c, None),
@@ -105,7 +119,7 @@ impl Config {
         std::fs::write(
             &tmp,
             format!(
-                "# canopy settings. Edit freely; canopy rewrites this file when you change settings.\n\n{text}"
+                "# acreage settings. Edit freely; acreage rewrites this file when you change settings.\n\n{text}"
             ),
         )?;
         std::fs::rename(tmp, p)

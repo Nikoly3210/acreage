@@ -6,21 +6,21 @@ use std::time::Duration;
 
 use clap::Parser;
 
-use canopy::app::App;
-use canopy::config::Config;
-use canopy::model::Tree;
-use canopy::report::{self, Format, Header, ReportOpts};
-use canopy::scan::mounts::MountTable;
-use canopy::scan::{ScanEvent, ScanOpts, Scanner};
-use canopy::screens::picker::resolve;
-use canopy::ui::{fonts, style, theme};
-use canopy::view::{SizeMode, filtered_sizes, node_size};
+use acreage::app::App;
+use acreage::config::Config;
+use acreage::model::Tree;
+use acreage::report::{self, Format, Header, ReportOpts};
+use acreage::scan::mounts::MountTable;
+use acreage::scan::{ScanEvent, ScanOpts, Scanner};
+use acreage::screens::picker::resolve;
+use acreage::ui::{fonts, style, theme};
+use acreage::view::{SizeMode, filtered_sizes, node_size};
 
 /// See where your disk space went: a live, zoomable treemap.
 #[derive(Parser)]
 #[command(version, about)]
 struct Cli {
-    /// Folder to scan. Without it, canopy shows the disk picker.
+    /// Folder to scan. Without it, acreage shows the disk picker.
     path: Option<PathBuf>,
     /// Also descend into other filesystems mounted below PATH (default: stay on one).
     #[arg(long)]
@@ -52,13 +52,18 @@ struct Cli {
 }
 
 fn fail(msg: String) -> ! {
-    eprintln!("canopy: {msg}");
+    eprintln!("acreage: {msg}");
     std::process::exit(2);
 }
 
 /// `--report`: the same scanner and report as the GUI, no window.
 fn headless(root: PathBuf, cli: &Cli, cfg: &Config) -> ! {
-    let filter = match cli.filter.as_deref().map(canopy::filter::parse).transpose() {
+    let filter = match cli
+        .filter
+        .as_deref()
+        .map(acreage::filter::parse)
+        .transpose()
+    {
         Ok(f) => f.flatten(),
         Err(e) => fail(format!("bad filter: {e}")),
     };
@@ -136,7 +141,7 @@ fn headless(root: PathBuf, cli: &Cli, cfg: &Config) -> ! {
         fail(format!("couldn't write {target}: {e}"));
     }
     if errors > 0 {
-        eprintln!("canopy: {errors} folders couldn't be read; their size isn't counted");
+        eprintln!("acreage: {errors} folders couldn't be read; their size isn't counted");
     }
     std::process::exit(0);
 }
@@ -174,14 +179,14 @@ fn main() -> eframe::Result {
     };
     let native = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
-            .with_title("canopy")
-            .with_app_id("canopy")
+            .with_title("Acreage")
+            .with_app_id("acreage")
             .with_inner_size([1200.0, 800.0])
             .with_min_inner_size(theme::layout::MIN_WINDOW),
         ..Default::default()
     };
     eframe::run_native(
-        "canopy",
+        "acreage",
         native,
         Box::new(move |cc| {
             fonts::install(&cc.egui_ctx);

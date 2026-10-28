@@ -1,4 +1,4 @@
-//! canopy: a live, zoomable treemap disk usage browser for Linux.
+//! acreage: a live, zoomable treemap disk usage browser for Linux.
 //!
 //! `model`, `scan`, `filter`, `layout` and `view` have no UI dependency, so they can be
 //! tested on their own and reused by a headless report mode.

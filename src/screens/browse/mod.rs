@@ -204,7 +204,7 @@ fn default_report_path(fmt: Format) -> String {
     let stamp = crate::report::utc_stamp(now_secs())
         .replace([' ', ':'], "-")
         .replace("-UTC", "");
-    format!("~/canopy-report-{stamp}.{}", fmt.ext())
+    format!("~/acreage-report-{stamp}.{}", fmt.ext())
 }
 
 impl Browse {
@@ -1050,7 +1050,7 @@ impl Browse {
                     ui.set_width(ui.available_width());
                     ui.horizontal_centered(|ui| {
                         ui.label(
-                            egui::RichText::new("Click a block for details · double-click or Enter to zoom · right-click for actions")
+                            egui::RichText::new("Click a block to see what it is · double-click to go inside · right-click for more · ? lists every key")
                                 .font(fonts::font(ty::SM))
                                 .color(p.text_muted),
                         );

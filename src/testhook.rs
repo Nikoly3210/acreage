@@ -1,4 +1,4 @@
-//! Test hook: with `CANOPY_STATE_FILE=/path.json`, the app writes what the user can see
+//! Test hook: with `ACREAGE_STATE_FILE=/path.json`, the app writes what the user can see
 //! (screen, zoom, selection, filter, dialogs, toasts) whenever it changes. The e2e suite
 //! reads it to assert behaviour instead of comparing pixels. Off unless the variable is set.
 
@@ -13,7 +13,7 @@ pub struct Hook {
 impl Hook {
     pub fn from_env() -> Hook {
         Hook {
-            path: std::env::var_os("CANOPY_STATE_FILE").map(PathBuf::from),
+            path: std::env::var_os("ACREAGE_STATE_FILE").map(PathBuf::from),
             last: String::new(),
         }
     }

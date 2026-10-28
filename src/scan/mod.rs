@@ -62,7 +62,7 @@ struct Ctl {
     finished: AtomicBool,
     ids: Arc<AtomicU32>,
     pending: AtomicUsize,
-    /// Test hook (CANOPY_TEST_PAUSE_AFTER): pause after this many folders, so e2e tests can
+    /// Test hook (ACREAGE_TEST_PAUSE_AFTER): pause after this many folders, so e2e tests can
     /// act while a scan is genuinely in progress. usize::MAX = never.
     pause_after: AtomicUsize,
     done: AtomicUsize,
@@ -135,7 +135,7 @@ impl Scanner {
             ids,
             pending: AtomicUsize::new(1),
             pause_after: AtomicUsize::new(if root_id == 0 {
-                std::env::var("CANOPY_TEST_PAUSE_AFTER")
+                std::env::var("ACREAGE_TEST_PAUSE_AFTER")
                     .ok()
                     .and_then(|v| v.parse().ok())
                     .unwrap_or(usize::MAX)

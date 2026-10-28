@@ -49,13 +49,13 @@ pub const DARK: Palette = Palette {
     border_input: Color32::from_rgb(0x6b, 0x74, 0x80),
     text: Color32::from_rgb(0xe6, 0xe9, 0xee),
     text_muted: Color32::from_rgb(0x9a, 0xa3, 0xae),
-    accent: Color32::from_rgb(0x3f, 0xb6, 0xa8),
-    on_accent: Color32::from_rgb(0x0b, 0x12, 0x15),
+    accent: Color32::from_rgb(0xb8, 0xd4, 0x4a),
+    on_accent: Color32::from_rgb(0x12, 0x16, 0x0a),
     danger: Color32::from_rgb(0xf0, 0x64, 0x5a),
     on_danger: Color32::from_rgb(0x16, 0x06, 0x06),
     success: Color32::from_rgb(0x4c, 0xc3, 0x8a),
     warning: Color32::from_rgb(0xe6, 0xb4, 0x50),
-    focus: Color32::from_rgb(0x3f, 0xb6, 0xa8),
+    focus: Color32::from_rgb(0xb8, 0xd4, 0x4a),
     tm_canvas: Color32::from_rgb(0x0d, 0x10, 0x13),
     tm_dir_0: Color32::from_rgb(0x26, 0x2c, 0x34),
     tm_dir_1: Color32::from_rgb(0x2e, 0x35, 0x40),
@@ -71,7 +71,7 @@ pub const DARK: Palette = Palette {
     tm_free_label: Color32::from_rgb(0xcf, 0xe3, 0xd8),
     tm_select: Color32::from_rgb(0xff, 0xff, 0xff),
     tm_select_halo: Color32::from_rgb(0x00, 0x00, 0x00),
-    tm_hover: Color32::from_rgb(0x3f, 0xb6, 0xa8),
+    tm_hover: Color32::from_rgb(0xb8, 0xd4, 0x4a),
 };
 
 pub const LIGHT: Palette = Palette {
@@ -83,13 +83,13 @@ pub const LIGHT: Palette = Palette {
     border_input: Color32::from_rgb(0x7c, 0x85, 0x91),
     text: Color32::from_rgb(0x15, 0x19, 0x1f),
     text_muted: Color32::from_rgb(0x5a, 0x63, 0x6e),
-    accent: Color32::from_rgb(0x0f, 0x7c, 0x71),
+    accent: Color32::from_rgb(0x4f, 0x65, 0x12),
     on_accent: Color32::from_rgb(0xff, 0xff, 0xff),
     danger: Color32::from_rgb(0xc0, 0x36, 0x2c),
     on_danger: Color32::from_rgb(0xff, 0xff, 0xff),
     success: Color32::from_rgb(0x1d, 0x7a, 0x4d),
     warning: Color32::from_rgb(0x8a, 0x5a, 0x00),
-    focus: Color32::from_rgb(0x0f, 0x7c, 0x71),
+    focus: Color32::from_rgb(0x4f, 0x65, 0x12),
     tm_canvas: Color32::from_rgb(0xe9, 0xec, 0xf0),
     tm_dir_0: Color32::from_rgb(0xc9, 0xcf, 0xd7),
     tm_dir_1: Color32::from_rgb(0xbc, 0xc3, 0xcd),
@@ -105,7 +105,7 @@ pub const LIGHT: Palette = Palette {
     tm_free_label: Color32::from_rgb(0x17, 0x3b, 0x2a),
     tm_select: Color32::from_rgb(0x00, 0x00, 0x00),
     tm_select_halo: Color32::from_rgb(0xff, 0xff, 0xff),
-    tm_hover: Color32::from_rgb(0x0f, 0x7c, 0x71),
+    tm_hover: Color32::from_rgb(0x4f, 0x65, 0x12),
 };
 
 /// Treemap colours shared by both themes (file fills carry dark label ink in both).

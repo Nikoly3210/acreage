@@ -6,11 +6,11 @@
 
 use std::collections::HashMap;
 
-use canopy::layout::{Rect as LRect, squarify};
-use canopy::ui::theme::{Palette, layout::tm as L, sp};
-use canopy::ui::treemap_paint::{BlockKind, BlockState, Category, Tag, dir_body, paint_block};
-use canopy::ui::widgets::{self as w, Btn, Size, Variant};
-use canopy::ui::{fonts, style};
+use acreage::layout::{Rect as LRect, squarify};
+use acreage::ui::theme::{Palette, layout::tm as L, sp};
+use acreage::ui::treemap_paint::{BlockKind, BlockState, Category, Tag, dir_body, paint_block};
+use acreage::ui::widgets::{self as w, Btn, Size, Variant};
+use acreage::ui::{fonts, style};
 use egui::{Rect, Theme, pos2, vec2};
 use egui_phosphor::regular as icon;
 
@@ -104,11 +104,11 @@ fn fake_home() -> Node {
     .chain(many(rng, "invoice_", "pdf", 40, 100 * 1024, 2 * MB))
     .collect();
     let mut target = many(rng, "libdep", "rlib", 30, 5 * MB, 80 * MB);
-    target.push(file("canopy", 180 * MB));
+    target.push(file("acreage", 180 * MB));
     target.extend(many(rng, "obj", "o", 120, 64 * 1024, 4 * MB));
     let code = vec![
         dir(
-            "canopy",
+            "acreage",
             vec![
                 dir("target", target),
                 dir("src", many(rng, "mod", "rs", 25, 8 * 1024, 120 * 1024)),
@@ -460,14 +460,14 @@ impl Gallery {
                     w::breadcrumb(
                         ui,
                         p,
-                        &["/", "home", "you", "code", "canopy", "target", "release"],
+                        &["/", "home", "you", "code", "acreage", "target", "release"],
                     );
                     ui.scope(|ui| {
                         ui.set_max_width(260.0);
                         w::breadcrumb(
                             ui,
                             p,
-                            &["/", "home", "you", "code", "canopy", "target", "release"],
+                            &["/", "home", "you", "code", "acreage", "target", "release"],
                         );
                     });
 
@@ -613,7 +613,7 @@ impl Gallery {
                     w::toggle(ui, p, b, "Show hidden files");
                     w::toggle(ui, p, c, "Stay on one filesystem");
                     ui.add_space(sp(2));
-                    w::swatch(ui, p, canopy::ui::theme::tm::FILE_VIDEO, "Video");
+                    w::swatch(ui, p, acreage::ui::theme::tm::FILE_VIDEO, "Video");
                     w::swatch(
                         ui,
                         p,
@@ -728,14 +728,14 @@ fn main() -> eframe::Result {
 
     let opts = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
-            .with_title("canopy — design gallery")
-            .with_app_id("canopy")
+            .with_title("Acreage — design gallery")
+            .with_app_id("acreage")
             .with_inner_size([1280.0, 860.0])
-            .with_min_inner_size(canopy::ui::theme::layout::MIN_WINDOW),
+            .with_min_inner_size(acreage::ui::theme::layout::MIN_WINDOW),
         ..Default::default()
     };
     eframe::run_native(
-        "canopy-gallery",
+        "acreage-gallery",
         opts,
         Box::new(move |cc| {
             fonts::install(&cc.egui_ctx);

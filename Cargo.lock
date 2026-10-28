@@ -132,6 +132,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "acreage"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "crossbeam-channel",
+ "eframe",
+ "egui",
+ "egui-phosphor",
+ "globset",
+ "inotify",
+ "rustix 1.1.6",
+ "serde",
+ "tempfile",
+ "toml",
+ "trash",
+]
+
+[[package]]
 name = "adler2"
 version = "2.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -630,24 +648,6 @@ dependencies = [
  "rustix 1.1.6",
  "wayland-backend",
  "wayland-client",
-]
-
-[[package]]
-name = "canopy"
-version = "0.1.0"
-dependencies = [
- "clap",
- "crossbeam-channel",
- "eframe",
- "egui",
- "egui-phosphor",
- "globset",
- "inotify",
- "rustix 1.1.6",
- "serde",
- "tempfile",
- "toml",
- "trash",
 ]
 
 [[package]]

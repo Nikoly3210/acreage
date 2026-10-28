@@ -369,12 +369,12 @@ impl Browse {
                 view.filter_src.clone()
             };
             Some((
-                format!("Nothing here matches {what}"),
+                format!("Nothing in this folder matches {what}."),
                 view.filter.is_some().then_some("Clear filter"),
             ))
         } else if !self.tree.is_scanned(zoom) {
             Some((
-                format!("Reading {} …", self.tree.path(zoom).display()),
+                format!("Measuring {} …", self.tree.path(zoom).display()),
                 None,
             ))
         } else if self.tree.children(zoom).next().is_none() {

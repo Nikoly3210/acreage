@@ -1,4 +1,4 @@
-"""canopy end-to-end tests, one class per recon flow. Case ids match replica/test-plan.md.
+"""acreage end-to-end tests, one class per recon flow. Case ids match replica/test-plan.md.
 
     cargo build --release && python3 -m unittest discover -s e2e -v
 """
@@ -9,7 +9,7 @@ import time
 import unittest
 from pathlib import Path
 
-from harness import CanopyCase, apparent_total, display, trash_dir, write
+from harness import AcreageCase, apparent_total, display, trash_dir, write
 
 MB = 1 << 20
 
@@ -28,7 +28,7 @@ def basic_tree(root: Path):
 # ---------------------------------------------------------------- F01 find what is eating the disk
 
 
-class F01FindSpace(CanopyCase):
+class F01FindSpace(AcreageCase):
     def test_F01_H1_total_matches_reference(self):
         root = basic_tree(self.tmp / "fx")
         os.link(root / "Videos" / "talk.mkv", root / "Downloads" / "talk-hardlink.mkv")
@@ -179,7 +179,7 @@ class F01FindSpace(CanopyCase):
 # ---------------------------------------------------------------- F02 narrow with a filter
 
 
-class F02Filter(CanopyCase):
+class F02Filter(AcreageCase):
     def test_F02_H1_glob_filter_sizes(self):
         root = basic_tree(self.tmp / "fx")
         app = self.launch(root, "--apparent-size", "-f", "*.mkv")
@@ -247,7 +247,7 @@ class F02Filter(CanopyCase):
 # ---------------------------------------------------------------- F03 tag and clean up
 
 
-class F03TagAndTrash(CanopyCase):
+class F03TagAndTrash(AcreageCase):
     def setUp(self):
         super().setUp()
         self.root = basic_tree(self.tmp / "fx")
@@ -366,7 +366,7 @@ class F03TagAndTrash(CanopyCase):
 # ---------------------------------------------------------------- F04 act on one item
 
 
-class F04Actions(CanopyCase):
+class F04Actions(AcreageCase):
     def test_F04_H1_copy_path(self):
         root = basic_tree(self.tmp / "fx")
         app = self.launch(root, "--apparent-size")
@@ -406,7 +406,7 @@ class F04Actions(CanopyCase):
 # ---------------------------------------------------------------- F09 get back up / misc screens
 
 
-class F09Navigation(CanopyCase):
+class F09Navigation(AcreageCase):
     def test_F09_H1_up_from_deep(self):
         root = self.tmp / "fx"
         write(root / "a" / "b" / "c" / "d" / "deep.bin", 50 * MB)

@@ -655,7 +655,7 @@ pub fn status_bar(ui: &mut Ui, p: &Palette, s: &StatusInfo) -> bool {
                     }
                     ScanStatus::Done { secs, errors } => {
                         ui.label(rt(icon::CHECK_CIRCLE.into(), p.success));
-                        ui.label(rt(format!("Done in {secs:.1} s"), p.text));
+                        ui.label(rt(format!("Measured in {secs:.1} s"), p.text));
                         if errors > 0 {
                             let link = ui.add(
                                 egui::Label::new(rt(

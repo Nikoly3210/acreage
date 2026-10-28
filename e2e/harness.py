@@ -1,5 +1,5 @@
-"""End-to-end harness for canopy: a private Xvfb display, the real release binary, xdotool
-for input, and the CANOPY_STATE_FILE hook for assertions.
+"""End-to-end harness for acreage: a private Xvfb display, the real release binary, xdotool
+for input, and the ACREAGE_STATE_FILE hook for assertions.
 
 Nothing here touches the user's session or files: every test builds its own fixture under
 a temp dir, `xdg-open` and the terminal are replaced by recorders, and trashing happens
@@ -17,8 +17,8 @@ import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-BIN = ROOT / "target" / "release" / "canopy"
-SHOTS = Path(os.environ.get("CANOPY_E2E_SHOTS", ROOT / "e2e" / "shots"))
+BIN = ROOT / "target" / "release" / "acreage"
+SHOTS = Path(os.environ.get("ACREAGE_E2E_SHOTS", ROOT / "e2e" / "shots"))
 
 
 class Display:
@@ -61,8 +61,8 @@ class App:
         self.record = tmp / "launched.txt"
         bindir = tmp / "bin"
         fake_bin(bindir, self.record)
-        env = dict(display.env, CANOPY_STATE_FILE=str(self.state_file), TERMINAL="fake-term")
-        # Never read or write the real ~/.config/canopy.
+        env = dict(display.env, ACREAGE_STATE_FILE=str(self.state_file), TERMINAL="fake-term")
+        # Never read or write the real ~/.config/acreage.
         env["XDG_CONFIG_HOME"] = str(config_home or (tmp / "config"))
         # A private HOME too: reports default to ~/, and nothing may land in the real one.
         self.home = tmp / "home"
@@ -81,7 +81,7 @@ class App:
             else:
                 time.sleep(0.1)
         if self.wid is None:
-            raise RuntimeError("canopy window never appeared: " + self.stderr.read_text())
+            raise RuntimeError("acreage window never appeared: " + self.stderr.read_text())
         self.xdo("windowsize", self.wid, str(size[0]), str(size[1]))
         self.xdo("windowmove", self.wid, "0", "0")
         self.focus()
@@ -137,7 +137,7 @@ class App:
         last = None
         while time.time() < deadline:
             if not self.alive():
-                raise AssertionError(f"canopy exited while waiting for {what}: {self.stderr.read_text()[-2000:]}")
+                raise AssertionError(f"acreage exited while waiting for {what}: {self.stderr.read_text()[-2000:]}")
             try:
                 last = self.state()
                 if pred(last):
@@ -204,17 +204,17 @@ def display():
     return DISPLAY
 
 
-class CanopyCase(unittest.TestCase):
+class AcreageCase(unittest.TestCase):
     """Base: a temp dir per test, the app closed after, and no panics allowed."""
 
     def setUp(self):
-        self.tmp = Path(tempfile.mkdtemp(prefix="canopy-e2e-", dir="/tmp"))
+        self.tmp = Path(tempfile.mkdtemp(prefix="acreage-e2e-", dir="/tmp"))
         self.apps = []
 
     def tearDown(self):
         for a in self.apps:
             err = a.close()
-            self.assertNotIn("panicked", err, f"canopy panicked:\n{err[-3000:]}")
+            self.assertNotIn("panicked", err, f"acreage panicked:\n{err[-3000:]}")
         # Restore permissions so cleanup can't fail on locked fixtures.
         for p in self.tmp.rglob("*"):
             try:
@@ -251,7 +251,7 @@ def apparent_total(root: Path):
     """Reference total like `du -sb --apparent-size`: dirs count too, hardlinks once,
     symlinks not followed, mount points not entered."""
     seen = set()
-    total = 0  # canopy counts entries below the root, not the root's own inode
+    total = 0  # acreage counts entries below the root, not the root's own inode
     for dirpath, dirnames, filenames in os.walk(root, followlinks=False, onerror=lambda e: None):
         for name in dirnames + filenames:
             st = os.lstat(os.path.join(dirpath, name))

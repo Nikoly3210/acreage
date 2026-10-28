@@ -10,12 +10,12 @@ import subprocess
 import time
 from pathlib import Path
 
-from harness import CanopyCase, write
+from harness import AcreageCase, write
 from test_flows import MB, basic_tree
 
 
 def cfg(home: Path, text: str):
-    p = home / "canopy" / "config.toml"
+    p = home / "acreage" / "config.toml"
     p.parent.mkdir(parents=True, exist_ok=True)
     p.write_text(text)
     return p
@@ -24,7 +24,7 @@ def cfg(home: Path, text: str):
 # ---------------------------------------------------------------- F06 live updates
 
 
-class F06Live(CanopyCase):
+class F06Live(AcreageCase):
     def setUp(self):
         super().setUp()
         self.root = basic_tree(self.tmp / "fx")
@@ -97,7 +97,7 @@ class F06Live(CanopyCase):
 # ---------------------------------------------------------------- F05 views
 
 
-class F05Views(CanopyCase):
+class F05Views(AcreageCase):
     def test_F05_H1_views_keep_their_own_filter_and_zoom(self):
         root = basic_tree(self.tmp / "fx")
         app = self.launch(root, "--apparent-size")
@@ -131,7 +131,7 @@ class F05Views(CanopyCase):
 # ---------------------------------------------------------------- F07 refine and tags by path
 
 
-class F07Refine(CanopyCase):
+class F07Refine(AcreageCase):
     def setUp(self):
         super().setUp()
         self.root = basic_tree(self.tmp / "fx")
@@ -168,7 +168,7 @@ class F07Refine(CanopyCase):
 # ---------------------------------------------------------------- F08 export and --report
 
 
-class F08Export(CanopyCase):
+class F08Export(AcreageCase):
     def test_F08_H1_headless_text_report(self):
         root = basic_tree(self.tmp / "fx")
         r = self.run_cli(root, "--apparent-size", "--report", "-", "--depth", "1")
@@ -207,7 +207,7 @@ class F08Export(CanopyCase):
         app.shot("F08-H3-export")
         app.key("ctrl+s")
         app.wait(lambda s: any("Saved report" in t for t in s["toasts"]), what="saved toast")
-        files = list(app.home.glob("canopy-report-*.txt"))
+        files = list(app.home.glob("acreage-report-*.txt"))
         self.assertEqual(len(files), 1, files)
         self.assertIn(str(root), files[0].read_text().splitlines()[0])
 
@@ -215,7 +215,7 @@ class F08Export(CanopyCase):
 # ---------------------------------------------------------------- S09 settings, S10 presets
 
 
-class S09Settings(CanopyCase):
+class S09Settings(AcreageCase):
     def test_S09_H1_saved_settings_apply(self):
         root = basic_tree(self.tmp / "fx")
         write(root / ".cache" / "big.bin", 500 * MB)
@@ -234,7 +234,7 @@ class S09Settings(CanopyCase):
         app.wait_done()
         app.key("ctrl+shift+t")
         app.wait(lambda s: s["theme"] == "light", what="light theme")
-        text = (home / "canopy" / "config.toml").read_text()
+        text = (home / "acreage" / "config.toml").read_text()
         self.assertIn('theme = "light"', text)
 
     def test_S09_E1_broken_config_falls_back(self):
@@ -277,4 +277,4 @@ class S09Settings(CanopyCase):
         app.wait(lambda s: s["presets_menu"], what="presets menu again")
         app.click(1200 - 300 - 8 + 80, 92 + 4 + 20 + 24 + 7 + 12)  # "Save current filter"
         s = app.wait(lambda s: "*.mp3;>6mb" in s["presets"], what="preset saved")
-        self.assertIn('filter = "*.mp3;>6mb"', (home / "canopy" / "config.toml").read_text())
+        self.assertIn('filter = "*.mp3;>6mb"', (home / "acreage" / "config.toml").read_text())
