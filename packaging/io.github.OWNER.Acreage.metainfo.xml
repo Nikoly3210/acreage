@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Draft. Before submitting: replace OWNER with the code host account (or switch the id
+     to the domain, e.g. app.getacreage.Acreage), add screenshot URLs and a release. -->
+<component type="desktop-application">
+  <id>io.github.OWNER.Acreage</id>
+  <name>Acreage</name>
+  <summary>See what's taking up your disk</summary>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-or-later</project_license>
+  <developer id="io.github.OWNER">
+    <name>OWNER</name>
+  </developer>
+  <description>
+    <p>Acreage shows your disk as a map: every folder and file is a block, labelled and sized by the space it takes. It fills in while it scans and keeps up when files change, so you can watch a download grow or see a cleanup land.</p>
+    <p>Sizes match du: hardlinks are counted once, btrfs subvolumes of the same filesystem are included, and sparse or compressed files are flagged.</p>
+    <ul>
+      <li>Filters like *.iso;&gt;1gb that combine names, sizes, age and tags</li>
+      <li>Tags, several views at once, and rescanning just one folder</li>
+      <li>Move to Trash after a confirm step</li>
+      <li>Reports in text, CSV or JSON, and a command-line report mode</li>
+      <li>Works from the keyboard and tiles cleanly in i3 and Sway</li>
+    </ul>
+    <p>No account and no telemetry: nothing leaves your machine.</p>
+  </description>
+  <launchable type="desktop-id">acreage.desktop</launchable>
+  <categories>
+    <category>Utility</category>
+    <category>FileTools</category>
+  </categories>
+  <keywords>
+    <keyword>disk</keyword>
+    <keyword>usage</keyword>
+    <keyword>treemap</keyword>
+    <keyword>storage</keyword>
+    <keyword>du</keyword>
+  </keywords>
+  <content_rating type="oars-1.1"/>
+  <supports>
+    <control>keyboard</control>
+    <control>pointing</control>
+  </supports>
+</component>

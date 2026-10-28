@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=Acreage
+GenericName=Disk Usage Map
+Comment=See what's taking up your disk
+Exec=acreage %f
+Icon=acreage
+Terminal=false
+Categories=Utility;FileTools;
+Keywords=disk;usage;space;treemap;storage;cleanup;du;analyzer;
+StartupWMClass=acreage
+MimeType=inode/directory;

@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Acreage — see what's taking up your disk</title>
+<meta name="description" content="A live map of every folder and file, labelled and to scale, that keeps up as things change. Free and open source, for Linux.">
+<meta property="og:title" content="Acreage — see what's taking up your disk">
+<meta property="og:description" content="A live, labelled treemap of your disk for Linux. Free and open source.">
+<meta property="og:image" content="img/hero-dark.png">
+<style>
+/* Colour roles from replica/design/tokens.json (checked with contrast.py: 0 AA failures). */
+:root {
+  --bg: #111418; --surface: #181c22; --surface-2: #20252d; --border: #2c323b;
+  --text: #e6e9ee; --text-muted: #9aa3ae; --accent: #b8d44a; --on-accent: #12160a;
+  --focus: #b8d44a; --code-bg: #0d1013;
+  --radius-sm: 3px; --radius-md: 5px; --radius-lg: 8px;
+  --space-2: 4px; --space-3: 6px; --space-4: 8px; --space-5: 12px; --space-6: 16px; --space-7: 24px; --space-8: 32px;
+  --font: system-ui, "Noto Sans", "DejaVu Sans", sans-serif;
+  --mono: ui-monospace, "DejaVu Sans Mono", "Noto Sans Mono", monospace;
+}
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #f7f8fa; --surface: #ffffff; --surface-2: #eef0f3; --border: #dadee4;
+    --text: #15191f; --text-muted: #5a636e; --accent: #4f6512; --on-accent: #ffffff;
+    --focus: #4f6512; --code-bg: #e9ecf0;
+  }
+}
+* { box-sizing: border-box; }
+html { background: var(--bg); }
+body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.55 var(--font); }
+a { color: var(--accent); }
+a:focus-visible, .button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.wrap { max-width: 1080px; margin: 0 auto; padding: 0 16px; }
+header.top { display: flex; align-items: center; justify-content: space-between; padding: var(--space-6) 0; }
+.brand { display: flex; align-items: center; gap: var(--space-4); font-weight: 700; font-size: 18px; color: var(--text); text-decoration: none; }
+.brand svg { width: 22px; height: 22px; }
+nav a { color: var(--text-muted); text-decoration: none; margin-left: var(--space-6); font-size: 14px; }
+nav a:hover { color: var(--text); }
+.hero { padding: var(--space-8) 0 var(--space-7); }
+.hero h1 { font-size: clamp(32px, 6vw, 52px); line-height: 1.08; margin: 0 0 var(--space-5); letter-spacing: -0.02em; }
+.hero p.lede { font-size: clamp(17px, 2.4vw, 20px); color: var(--text-muted); max-width: 640px; margin: 0 0 var(--space-7); }
+.button { display: inline-block; background: var(--accent); color: var(--on-accent); font-weight: 700; padding: 12px 22px; border-radius: var(--radius-md); text-decoration: none; }
+.button.secondary { background: transparent; color: var(--text); border: 1px solid var(--border); font-weight: 600; margin-left: var(--space-4); }
+.shot { margin: var(--space-7) 0 0; border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; background: var(--surface); }
+.shot img { display: block; width: 100%; height: auto; }
+.shot figcaption { font-size: 13px; color: var(--text-muted); padding: var(--space-4) var(--space-5); border-top: 1px solid var(--border); }
+section { padding: var(--space-8) 0; border-top: 1px solid var(--border); }
+section h2 { font-size: 26px; margin: 0 0 var(--space-6); letter-spacing: -0.01em; }
+.grid { display: grid; gap: var(--space-6); grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: var(--space-6); }
+.card h3 { margin: 0 0 var(--space-3); font-size: 17px; }
+.card p { margin: 0; color: var(--text-muted); }
+.steps { counter-reset: step; list-style: none; padding: 0; margin: 0; display: grid; gap: var(--space-6); grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+.steps li { counter-increment: step; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: var(--space-6); }
+.steps li::before { content: counter(step); display: inline-block; width: 28px; height: 28px; line-height: 28px; text-align: center; border-radius: 50%; background: var(--accent); color: var(--on-accent); font-weight: 700; margin-bottom: var(--space-4); }
+.steps strong { display: block; margin-bottom: var(--space-2); }
+.steps span { color: var(--text-muted); }
+code, pre { font-family: var(--mono); font-size: 14px; }
+code { background: var(--code-bg); padding: 1px 5px; border-radius: var(--radius-sm); }
+pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-md); padding: var(--space-5); overflow-x: auto; margin: var(--space-4) 0; }
+.split { display: grid; gap: var(--space-7); grid-template-columns: 1fr 1fr; align-items: center; }
+@media (max-width: 760px) { .split { grid-template-columns: 1fr; } nav { display: none; } .button.secondary { margin: var(--space-4) 0 0; } }
+.price { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: var(--space-7); max-width: 520px; }
+.price .amount { font-size: 40px; font-weight: 800; margin: 0; }
+.price ul { padding-left: 18px; color: var(--text-muted); }
+details { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: var(--space-5) var(--space-6); margin-bottom: var(--space-4); }
+summary { cursor: pointer; font-weight: 600; }
+details p { color: var(--text-muted); margin: var(--space-4) 0 0; }
+.problem li { margin-bottom: var(--space-5); color: var(--text-muted); }
+.problem strong { color: var(--text); }
+.final { text-align: center; padding: var(--space-8) 0 64px; }
+.final h2 { font-size: 30px; }
+footer { color: var(--text-muted); font-size: 13px; padding: var(--space-6) 0 var(--space-8); border-top: 1px solid var(--border); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <a class="brand" href="#">
+      <!-- Placeholder mark until the logo brief (replica/brand.md) is delivered. -->
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="1" y="1" width="22" height="22" rx="4" fill="none" stroke="currentColor" stroke-width="2"/><rect x="4" y="4" width="9" height="16" rx="1" fill="var(--accent)"/><rect x="15" y="4" width="5" height="7" rx="1" fill="currentColor" opacity=".55"/><rect x="15" y="13" width="5" height="7" rx="1" fill="currentColor" opacity=".3"/></svg>
+      Acreage
+    </a>
+    <nav aria-label="Page"><a href="#how">How it works</a><a href="#features">Features</a><a href="#faq">FAQ</a><a href="#get">Get it</a></nav>
+  </header>
+
+  <main>
+    <div class="hero">
+      <h1>See what's taking up your disk.</h1>
+      <p class="lede">A live map of every folder and file, labelled and to scale, that keeps up as things change. For Linux.</p>
+      <a class="button" href="#get">Get Acreage</a><a class="button secondary" href="#how">How it works</a>
+      <figure class="shot">
+        <img src="img/hero-dark.png" width="1280" height="778" alt="Acreage showing a home folder as nested blocks: a 38 GiB virtual machine image, a 24 GiB Videos folder and 19 GiB of downloads stand out, with two folders tagged red and yellow.">
+        <figcaption>The real app, scanning a demo home folder.</figcaption>
+      </figure>
+    </div>
+
+    <section aria-labelledby="problem">
+      <h2 id="problem">Why another disk tool</h2>
+      <ul class="problem">
+        <li><strong>The numbers don't add up.</strong> Disk tools disagree with <code>du</code> and with each other. They count hardlinks twice, stop at btrfs subvolumes, and don't say when a file is sparse.</li>
+        <li><strong>The picture goes stale, or never shows up.</strong> You wait for the whole scan, then rescan everything after deleting one folder. Some tools crash on cloud drives, or if you act while they scan.</li>
+      </ul>
+    </section>
+
+    <section id="how" aria-labelledby="how-h">
+      <h2 id="how-h">How it works</h2>
+      <ol class="steps">
+        <li><strong>Point it at a disk or a folder.</strong><span>Pick one from the list, or run <code>acreage ~</code> from a terminal.</span></li>
+        <li><strong>Watch the map fill in.</strong><span>Every block is a folder or file, sized by what it takes on disk, and labelled. The biggest ones are obvious at a glance.</span></li>
+        <li><strong>Go in, filter, clean up.</strong><span>Double-click to zoom, filter with <code>*.iso;&gt;1gb</code>, tag what to remove, move it to Trash. The map updates as you go.</span></li>
+      </ol>
+    </section>
+
+    <section id="features" aria-labelledby="features-h">
+      <h2 id="features-h">What it does differently</h2>
+      <div class="grid">
+        <div class="card"><h3>Live, the whole time</h3><p>Blocks appear while the scan runs and update when files change on disk. A changed block flashes, so you see what's growing.</p></div>
+        <div class="card"><h3>Sizes that match <code>du</code></h3><p>Hardlinks counted once, btrfs subvolumes included, sparse and compressed files flagged. Disk usage by default, file length if you prefer.</p></div>
+        <div class="card"><h3>Labels you can read</h3><p>Names and sizes on the blocks. <code>+</code> and <code>-</code> set how much detail you see; double-click zooms in.</p></div>
+        <div class="card"><h3>Keyboard all the way</h3><p>hjkl or arrows, Enter, Backspace, <code>/</code> to filter, Shift+F10 for the menu, Ctrl+T for a terminal right there. No dialogs: it tiles cleanly in i3 and Sway.</p></div>
+        <div class="card"><h3>Rescan just this folder</h3><p>F5 refreshes the folder you're in, even while the main scan is still going. Your tags stay put.</p></div>
+        <div class="card"><h3>Other drives on demand</h3><p>It stays on one filesystem by default. One keystroke scans into the USB stick or network share mounted inside it.</p></div>
+      </div>
+      <div class="split" style="margin-top: var(--space-7)">
+        <div>
+          <h3>Ask in one line</h3>
+          <p style="color: var(--text-muted)">Filters combine names, sizes, age and tags. Same kind means either; different kinds mean both.</p>
+          <pre>*.iso;*.qcow2;*.zip;*.zst;&gt;1gb
+*.mkv;&gt;1gb;&lt;6months;|:green</pre>
+          <p style="color: var(--text-muted)">Also: tags, several views at once, Trash with a confirm step, reports in text, CSV or JSON, and <code>acreage DIR --report -</code> for scripts.</p>
+        </div>
+        <figure class="shot" style="margin:0">
+          <img src="img/filter-light.png" width="1280" height="778" loading="lazy" alt="The light theme with a filter for disk images and archives over 1 GiB: only the virtual machine image, a dataset archive, a backup zip and two ISO files remain.">
+          <figcaption>A filter narrows the map to big archives and disk images.</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section aria-labelledby="price-h">
+      <h2 id="price-h">Price</h2>
+      <div class="price">
+        <p class="amount">Free</p>
+        <p>Open source under GPL-3.0-or-later.</p>
+        <ul><li>No account, no telemetry, no paid tier</li><li>Nothing leaves your machine</li><li>If it saves you an afternoon, you can support development (link at launch)</li></ul>
+      </div>
+    </section>
+
+    <section id="faq" aria-labelledby="faq-h">
+      <h2 id="faq-h">Questions</h2>
+      <details><summary>Does it delete anything on its own?</summary><p>No. It only moves what you choose to Trash, after asking, and you can restore it from your file manager's Trash.</p></details>
+      <details><summary>Does it need root?</summary><p>No. Folders you can't read show as “No access” and are listed, not silently skipped. To include folders only root can read, get a report without a window: <code>sudo acreage / --report - --depth 2</code>.</p></details>
+      <details><summary>Will it hang on a network share?</summary><p>It never scans into network or other filesystems unless you ask. When you do, it's as fast as the server lets it be.</p></details>
+      <details><summary>Why do its numbers differ from <code>df</code>?</summary><p><code>df</code> counts the whole filesystem, including space reserved for root and btrfs metadata. Acreage counts files, like <code>du</code>. Snapshots that share data are counted once per copy.</p></details>
+      <details><summary>Wayland, X11, i3, Sway?</summary><p>Built and tested on X11 under i3. Wayland should work, but hasn't been tested yet.</p></details>
+      <details><summary>Can I import a scan from another tool?</summary><p>Not yet. You can export a report as text, CSV or JSON.</p></details>
+      <details><summary>Where are the settings?</summary><p><code>~/.config/acreage/config.toml</code>: plain text, safe to edit.</p></details>
+    </section>
+
+    <section id="get" class="final" aria-labelledby="get-h">
+      <h2 id="get-h">Find out where the space went.</h2>
+      <p style="color: var(--text-muted)">Packages for the AUR and Flathub are coming with the first release. Until then, build it from source:</p>
+      <pre style="text-align:left; max-width: 560px; margin: var(--space-6) auto">git clone REPO_URL acreage
+cd acreage && cargo build --release
+./target/release/acreage ~</pre>
+    </section>
+  </main>
+
+  <footer>Acreage is free software under the GNU GPL v3 or later. Not affiliated with any other disk usage tool.</footer>
+</div>
+</body>
+</html>
