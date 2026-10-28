@@ -36,7 +36,6 @@ package() {
   cd "$pkgname-$pkgver"
   install -Dm755 target/release/acreage "$pkgdir/usr/bin/acreage"
   install -Dm644 packaging/acreage.desktop "$pkgdir/usr/share/applications/acreage.desktop"
-  install -Dm644 assets/acreage.svg "$pkgdir/usr/share/icons/hicolor/scalable/apps/acreage.svg"
   for s in 16 22 24 32 48 64 128 256 512; do
     install -Dm644 "assets/icons/${s}x${s}/acreage.png" "$pkgdir/usr/share/icons/hicolor/${s}x${s}/apps/acreage.png"
   done

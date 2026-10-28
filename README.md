@@ -1,3 +1,5 @@
+<img src="assets/icons/256x256/acreage.png" width="96" height="96" alt="">
+
 # Acreage
 
 See what's taking up your disk. A live map of every folder and file, labelled and to scale, that keeps up as things change. For Linux.
@@ -25,7 +27,6 @@ tar xzf acreage-0.1.0-x86_64-linux.tar.gz
 cd acreage-0.1.0-x86_64-linux
 install -Dm755 acreage ~/.local/bin/acreage
 install -Dm644 acreage.desktop ~/.local/share/applications/acreage.desktop
-install -Dm644 acreage.svg ~/.local/share/icons/hicolor/scalable/apps/acreage.svg
 for d in icons/*/; do install -Dm644 "$d/acreage.png" ~/.local/share/icons/hicolor/"$(basename "$d")"/apps/acreage.png; done
 ```
 
@@ -79,6 +80,10 @@ cargo test                                         # unit + scanner tests
 cargo build --release && python3 -m unittest discover -s e2e -v   # end-to-end, needs Xvfb and xdotool
 cargo run --example gallery                        # design system gallery
 ```
+
+## Support
+
+Acreage is free and stays free. If it saved you an afternoon, you can [buy me a coffee](https://buymeacoffee.com/nikoly3210).
 
 ## Licence
 

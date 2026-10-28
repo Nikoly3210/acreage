@@ -32,7 +32,7 @@ modules:
       - install -Dm755 target/release/acreage /app/bin/acreage
       - install -Dm644 packaging/acreage.desktop /app/share/applications/io.github.nikoly3210.Acreage.desktop
       - sed -i 's/^Icon=acreage$/Icon=io.github.nikoly3210.Acreage/' /app/share/applications/io.github.nikoly3210.Acreage.desktop
-      - install -Dm644 assets/acreage.svg /app/share/icons/hicolor/scalable/apps/io.github.nikoly3210.Acreage.svg
+      - for s in 64 128 256 512; do install -Dm644 assets/icons/${s}x${s}/acreage.png /app/share/icons/hicolor/${s}x${s}/apps/io.github.nikoly3210.Acreage.png; done
       - install -Dm644 packaging/io.github.nikoly3210.Acreage.metainfo.xml /app/share/metainfo/io.github.nikoly3210.Acreage.metainfo.xml
     sources:
       - type: git

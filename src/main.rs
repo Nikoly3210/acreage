@@ -181,6 +181,13 @@ fn main() -> eframe::Result {
         viewport: egui::ViewportBuilder::default()
             .with_title("Acreage")
             .with_app_id("acreage")
+            // Without one, eframe shows its own logo in the taskbar and Alt+Tab.
+            .with_icon(
+                eframe::icon_data::from_png_bytes(include_bytes!(
+                    "../assets/icons/256x256/acreage.png"
+                ))
+                .expect("bundled icon is a valid PNG"),
+            )
             .with_inner_size([1200.0, 800.0])
             .with_min_inner_size(theme::layout::MIN_WINDOW),
         ..Default::default()

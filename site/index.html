@@ -8,8 +8,9 @@
 <meta property="og:title" content="Acreage — see what's taking up your disk">
 <meta property="og:description" content="A live, labelled treemap of your disk for Linux. Free and open source.">
 <meta property="og:image" content="img/hero-dark.png">
-<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png">
+<link rel="icon" href="img/logo-192.png" sizes="192x192" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <style>
 /* Colour roles from replica/design/tokens.json (checked with contrast.py: 0 AA failures). */
 :root {
@@ -36,7 +37,8 @@ a:focus-visible, .button:focus-visible { outline: 2px solid var(--focus); outlin
 .wrap { max-width: 1080px; margin: 0 auto; padding: 0 16px; }
 header.top { display: flex; align-items: center; justify-content: space-between; padding: var(--space-6) 0; }
 .brand { display: flex; align-items: center; gap: var(--space-4); font-weight: 700; font-size: 18px; color: var(--text); text-decoration: none; }
-.brand svg { width: 22px; height: 22px; }
+.brand img { width: 28px; height: 28px; }
+.hero-mark { display: block; width: 96px; height: 96px; margin: 0 0 var(--space-6); }
 nav a { color: var(--text-muted); text-decoration: none; margin-left: var(--space-6); font-size: 14px; }
 nav a:hover { color: var(--text); }
 .hero { padding: var(--space-8) 0 var(--space-7); }
@@ -80,8 +82,7 @@ footer { color: var(--text-muted); font-size: 13px; padding: var(--space-6) 0 va
 <div class="wrap">
   <header class="top">
     <a class="brand" href="#">
-      <!-- Placeholder mark until the logo brief (replica/brand.md) is delivered. -->
-      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="1" y="1" width="22" height="22" rx="4" fill="none" stroke="currentColor" stroke-width="2"/><rect x="4" y="4" width="9" height="16" rx="1" fill="var(--accent)"/><rect x="15" y="4" width="5" height="7" rx="1" fill="currentColor" opacity=".55"/><rect x="15" y="13" width="5" height="7" rx="1" fill="currentColor" opacity=".3"/></svg>
+      <img src="img/logo-64.png" width="28" height="28" alt="">
       Acreage
     </a>
     <nav aria-label="Page"><a href="#how">How it works</a><a href="#features">Features</a><a href="#faq">FAQ</a><a href="#get">Get it</a></nav>
@@ -89,6 +90,7 @@ footer { color: var(--text-muted); font-size: 13px; padding: var(--space-6) 0 va
 
   <main>
     <div class="hero">
+      <img class="hero-mark" src="img/logo-192.png" width="96" height="96" alt="">
       <h1>See what's taking up your disk.</h1>
       <p class="lede">A live map of every folder and file, labelled and to scale, that keeps up as things change. For Linux.</p>
       <a class="button" href="#get">Get Acreage</a><a class="button secondary" href="#how">How it works</a>
@@ -145,7 +147,7 @@ footer { color: var(--text-muted); font-size: 13px; padding: var(--space-6) 0 va
       <div class="price">
         <p class="amount">Free</p>
         <p>Open source under GPL-3.0-or-later.</p>
-        <ul><li>No account, no telemetry, no paid tier</li><li>Nothing leaves your machine</li><li>If it saves you an afternoon, you can support development (link at launch)</li></ul>
+        <ul><li>No account, no telemetry, no paid tier</li><li>Nothing leaves your machine</li><li>If it saves you an afternoon, you can <a href="https://buymeacoffee.com/nikoly3210">buy me a coffee</a></li></ul>
       </div>
     </section>
 
@@ -168,7 +170,7 @@ footer { color: var(--text-muted); font-size: 13px; padding: var(--space-6) 0 va
     </section>
   </main>
 
-  <footer>Acreage is free software under the GNU GPL v3 or later. <a href="privacy.html">Privacy</a> · <a href="https://github.com/Nikoly3210/acreage">Source</a> · Not affiliated with any other disk usage tool.</footer>
+  <footer>Acreage is free software under the GNU GPL v3 or later. <a href="privacy.html">Privacy</a> · <a href="https://github.com/Nikoly3210/acreage">Source</a> · <a href="https://buymeacoffee.com/nikoly3210">Buy me a coffee</a> · Not affiliated with any other disk usage tool.</footer>
 </div>
 </body>
 </html>

@@ -18,7 +18,7 @@ jobs:
           v=${GITHUB_REF_NAME#v}
           d=acreage-$v-x86_64-linux
           mkdir -p "$d/icons"
-          cp target/release/acreage packaging/acreage.desktop assets/acreage.svg README.md CHANGELOG.md LICENSE "$d/"
+          cp target/release/acreage packaging/acreage.desktop README.md CHANGELOG.md LICENSE "$d/"
           cp -r assets/icons/. "$d/icons/"
           tar czf "$d.tar.gz" "$d"
           sha256sum "$d.tar.gz" > "$d.tar.gz.sha256"
